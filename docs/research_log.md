@@ -31,3 +31,52 @@
 - Encode user and product identifiers.
 - Merge review interactions with selected metadata attributes.
 - Prepare temporal train/validation/test splits.
+
+## 2026-07-24
+
+### Completed
+- Started and completed the main data preprocessing pipeline for the Amazon Electronics dataset.
+- Evaluated minimum user and product activity thresholds and selected a threshold of five interactions.
+- Streamed and validated the raw review dataset without loading it fully into memory.
+- Retained valid interaction fields: `user_id`, `parent_asin`, `rating`, `timestamp`, and `verified_purchase`.
+- Applied iterative five-core filtering until every retained user and product had at least five interactions.
+- Analysed duplicate user–product interactions using DuckDB.
+- Removed exact duplicate records and retained the most recent interaction for non-identical repeated user–product pairs.
+- Reapplied iterative five-core filtering after deduplication.
+- Produced a final clean interaction dataset containing 15,473,536 unique interactions, 1,641,026 users, and 368,228 products.
+- Extracted metadata only for products present in the final interaction dataset.
+- Verified complete metadata coverage, with one metadata record for every retained product.
+- Cleaned and standardised the selected metadata fields.
+- Created text representations for categories, features, descriptions, and product details.
+- Created a combined metadata text field for later item-feature generation.
+- Encoded user and product identifiers as contiguous integer indices.
+- Saved the encoded interaction dataset, encoded metadata dataset, user mapping, item mapping, and preprocessing summary files.
+
+### Design Decisions
+- Selected a minimum threshold of five interactions for both users and products to reduce graph sparsity while preserving a large amount of data.
+- Used iterative five-core filtering because removing low-activity users and products can cause connected entities to fall below the threshold.
+- Kept only one interaction per user–product pair to prevent duplicate pairs from appearing across temporal train, validation, and test sets.
+- Retained the most recent interaction when a user had multiple non-identical interactions with the same product.
+- Used DuckDB and partitioned Parquet files to process the large dataset efficiently.
+- Retained `title`, `store`, `main_category`, `categories`, `features`, `description`, and `details` as product metadata.
+- Replaced missing categorical metadata with explicit placeholders and converted complex metadata fields into clean text.
+- Converted original string identifiers into contiguous integer indices for compatibility with graph-learning libraries.
+
+### Key Findings
+- The initial five-core dataset contained 15,873,192 interactions, 1,676,376 users, and 374,249 products.
+- Duplicate analysis identified 219,618 repeated user–product pairs and 271,290 additional duplicate rows.
+- After duplicate resolution and final five-core cleanup, the dataset contained:
+  - 15,473,536 unique interactions
+  - 1,641,026 users
+  - 368,228 products
+- Every retained user and product has at least five interactions.
+- No duplicate user–product pairs remain.
+- Metadata coverage is 100%, with exactly 368,228 metadata records for 368,228 retained products.
+- No missing titles, stores, main categories, or combined metadata text remain after cleaning.
+
+### Next Steps
+- Create temporal training, validation, and test splits.
+- Verify that each user has sufficient interactions in the training set.
+- Prevent future interactions from leaking into earlier data partitions.
+- Save split statistics and reusable split files.
+- Begin graph construction using the encoded interactions and cleaned product metadata.
