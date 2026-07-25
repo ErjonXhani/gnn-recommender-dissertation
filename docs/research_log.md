@@ -80,3 +80,46 @@
 - Prevent future interactions from leaking into earlier data partitions.
 - Save split statistics and reusable split files.
 - Begin graph construction using the encoded interactions and cleaned product metadata.
+
+
+## 2026-07-25
+
+### Preprocessing Validation
+
+### Activities Completed
+
+- Continued reviewing the Amazon Reviews 2023 literature and identified the official Electronics 5-core benchmark released by the dataset authors.
+- Developed a dedicated validation notebook to compare my independently implemented preprocessing pipeline against the official benchmark.
+- Compared aggregate statistics, user–item pairs, ratings, and timestamps between the two datasets.
+- Performed additional verification against the original raw Amazon Electronics review data to investigate the observed discrepancies.
+
+### Results
+
+- Successfully reproduced the official benchmark in terms of:
+  - Number of interactions
+  - Number of users
+  - Number of products
+  - Number of unique user–item pairs
+- Confirmed that there were **no missing or additional user–item interactions** compared with the official benchmark.
+- Achieved approximately **99.83%** agreement in ratings and timestamps.
+- Identified that the remaining **0.17%** of differences were caused solely by the duplicate-review retention policy.
+- Verified using the raw Amazon review data that:
+  - The official benchmark retains the **earliest** duplicate review.
+  - My preprocessing pipeline currently retains the **most recent** duplicate review.
+
+### Reflection
+
+The validation demonstrates that my independently implemented preprocessing pipeline successfully reproduces the official Amazon Reviews 2023 Electronics 5-core benchmark. The only remaining methodological decision is whether to retain the current duplicate-review policy or modify the preprocessing pipeline to match the official benchmark exactly.
+
+### Research Decisions
+
+- No changes to the preprocessing pipeline have been made yet.
+- A decision regarding the duplicate-review retention policy will be taken after discussing the validation results with the project supervisor.
+
+### Next Steps
+
+- Contact my supervisor for guidance regarding the duplicate-review policy.
+- Depending on the decision, either:
+  - rerun the affected stages of the preprocessing pipeline using the earliest duplicate-review policy, or
+  - continue with the current implementation.
+- Begin preparing the train/validation/test split notebook while awaiting feedback.
