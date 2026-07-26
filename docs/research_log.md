@@ -123,3 +123,12 @@ The validation demonstrates that my independently implemented preprocessing pipe
   - rerun the affected stages of the preprocessing pipeline using the earliest duplicate-review policy, or
   - continue with the current implementation.
 - Begin preparing the train/validation/test split notebook while awaiting feedback.
+
+## 26 July 2026 – Benchmark Reproduction
+
+- Literature Review
+- Modified the preprocessing pipeline to retain the **earliest** duplicate review instead of the most recent.
+- Reran all preprocessing stages after duplicate resolution, including metadata encoding and identifier encoding.
+- Created separate `*_earliest` outputs to preserve the original preprocessing results.
+- Validated the new dataset against the official Amazon Reviews 2023 Electronics 5-core benchmark.
+- Achieved **15,473,535 / 15,473,536 (99.999994%)** matching interactions, with only one remaining duplicate-review tie case.
