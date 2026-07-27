@@ -1,4 +1,4 @@
-## 2026-07-23
+## 23 July 2026 - Review and Metadata Dataset Statistics
 
 ### Completed
 - Implemented streaming data processing for the Amazon Electronics review dataset.
@@ -32,7 +32,7 @@
 - Merge review interactions with selected metadata attributes.
 - Prepare temporal train/validation/test splits.
 
-## 2026-07-24
+## 24 July 2026 - Data Preprocessing
 
 ### Completed
 - Started and completed the main data preprocessing pipeline for the Amazon Electronics dataset.
@@ -82,9 +82,7 @@
 - Begin graph construction using the encoded interactions and cleaned product metadata.
 
 
-## 2026-07-25
-
-### Preprocessing Validation
+## 25 July 2026 - Preprocessing Validation
 
 ### Activities Completed
 
@@ -132,3 +130,40 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - Created separate `*_earliest` outputs to preserve the original preprocessing results.
 - Validated the new dataset against the official Amazon Reviews 2023 Electronics 5-core benchmark.
 - Achieved **15,473,535 / 15,473,536 (99.999994%)** matching interactions, with only one remaining duplicate-review tie case.
+
+## 27 July 2026 – Temporal Train/Validation/Test Splitting
+
+### Completed
+
+- Created the `src/` package and implemented `src/splitting.py` for dataset splitting, integrity checks, and diagnostics.
+- Implemented the leave-last-out and global timestamp splitting protocols.
+- Developed `04_train_validation_test_split_earliest.ipynb` to generate, validate, and analyse both splits.
+- Downloaded the official benchmark split files and compared the generated splits against them.
+- Investigated all remaining discrepancies against the encoded interaction data to establish their cause.
+- Generated and saved evaluation user samples, cold-item lists, and users without training history for both protocols.
+
+### Design Decisions
+
+- Moved the splitting logic into reusable functions within `src/`.
+- Used a deterministic `(user_idx, timestamp, item_idx)` ordering to ensure reproducible splits when timestamps are tied.
+- Implemented both splitting protocols to compare their impact on evaluation.
+- Retained `rating` and `verified_purchase` for future experiments.
+- Fixed the evaluation sample at 50,000 users per protocol under a fixed seed. Users are sampled but items never are, following Krichene and Rendle (2020), who show sampled item metrics are inconsistent with their exact versions.
+- Excluded users without training history from evaluation.
+
+### Key Findings
+
+- The global timestamp split reproduced the official benchmark exactly: 13,096,427 / 1,161,644 / 1,215,465 interactions, with no differing user–item pairs.
+- The leave-last-out split differed for only 25 users (0.0015%), with all differences explained by timestamp ties.
+- The discrepancy counts are internally consistent: 10 test-partition and 15 training-partition differences sum to the 25 validation-partition differences, as expected from the two possible tie configurations.
+- Timestamp ties affected only 44 users (0.0027% of all users).
+- Under leave-last-out, 99.9998% of test instances have training interactions that postdate them, averaging 19.03% of the training set. The global timestamp split eliminates this entirely (zero affected instances).
+- The timestamp protocol exposes 36,915 strictly cold items carrying 543,250 test interactions, against 1,172 under leave-last-out — a large enough population to support a dedicated cold-start evaluation.
+- The two protocols evaluate different populations: leave-last-out covers all 1,641,026 users, while the timestamp split covers 469,838 (28.63%) and leaves 36,208 users without training history.
+- All integrity checks passed successfully.
+
+### Next Steps
+
+- Construct nested dataset subsets for the scalability experiments.
+- Build the bipartite user–item graph from the training partitions.
+- Generate item feature representations from the cleaned metadata.

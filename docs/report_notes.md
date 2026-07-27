@@ -131,3 +131,93 @@ Mention:
 - Independent reproduction increases confidence in preprocessing.
 - Duplicate-review policy identified as only methodological difference.
 - Awaiting supervisor decision on whether to align with official benchmark.
+
+
+---
+
+## Train / Validation / Test Splitting
+
+Implemented and evaluated two benchmark splitting protocols:
+
+- Leave-last-out.
+- Global absolute timestamp.
+
+Mention:
+
+- Both protocols were implemented independently from the official benchmark.
+- Splitting logic moved into a reusable `src/splitting.py` module.
+- Deterministic `(user_idx, timestamp, item_idx)` ordering used to resolve timestamp ties reproducibly.
+- Original string identifiers used for benchmark validation because integer encodings are project-specific.
+- Generated reusable train, validation, and test partitions for all subsequent experiments.
+
+---
+
+## Split Validation
+
+Mention:
+
+- Compared generated splits against the official Amazon Reviews 2023 benchmark.
+- Global timestamp split reproduced the benchmark exactly.
+- Leave-last-out differed for only 25 users (0.0015%).
+- All remaining differences explained by timestamp ties.
+- All automated integrity checks passed successfully.
+
+---
+
+## Evaluation Protocol Comparison
+
+Mention:
+
+- Leave-last-out evaluates every user but introduces temporal lookahead.
+- Global timestamp preserves chronological ordering and completely removes lookahead.
+- Quantified lookahead under leave-last-out to demonstrate its magnitude.
+- Discuss how the choice of evaluation protocol may influence reported recommendation performance.
+
+---
+
+## Timestamp Tie Handling
+
+Mention:
+
+- Timestamp ties occur when multiple interactions share identical timestamps.
+- Deterministic tie-breaking ensures reproducible dataset generation.
+- Only 44 users (0.0027%) were affected by timestamp ties.
+- Tie cases fully explain the remaining benchmark differences.
+
+---
+
+## Evaluation User Sampling
+
+Mention:
+
+- Evaluation performed on a fixed random sample of 50,000 users per protocol.
+- Users sampled once using a fixed random seed.
+- Same evaluation users reused across every model.
+- Users are sampled, but items are never sampled during Top-K evaluation.
+- Users without training history excluded from evaluation.
+
+---
+
+## Cold-Start Evaluation
+
+Mention:
+
+- Generated lists of users without training history.
+- Generated lists of strictly cold items.
+- Timestamp protocol produces substantially more cold items than leave-last-out.
+- Timestamp split therefore supports a dedicated item cold-start experiment.
+- Cold-item lists saved for reuse in later notebooks.
+
+---
+
+## Discussion
+
+Mention:
+
+- Comparison of leave-last-out versus global timestamp evaluation.
+- Advantages and limitations of each protocol.
+- Impact of temporal leakage on recommendation evaluation.
+- Motivation for implementing and evaluating both splitting strategies.
+- Justification for using the timestamp split for dedicated cold-start experiments.
+- Importance of validating independently generated splits against the official benchmark to ensure reproducibility.
+
