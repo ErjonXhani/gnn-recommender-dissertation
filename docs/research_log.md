@@ -74,13 +74,6 @@
 - Metadata coverage is 100%, with exactly 368,228 metadata records for 368,228 retained products.
 - No missing titles, stores, main categories, or combined metadata text remain after cleaning.
 
-### Next Steps
-- Create temporal training, validation, and test splits.
-- Verify that each user has sufficient interactions in the training set.
-- Prevent future interactions from leaking into earlier data partitions.
-- Save split statistics and reusable split files.
-- Begin graph construction using the encoded interactions and cleaned product metadata.
-
 
 ## 25 July 2026 - Preprocessing Validation
 
@@ -114,13 +107,7 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - No changes to the preprocessing pipeline have been made yet.
 - A decision regarding the duplicate-review retention policy will be taken after discussing the validation results with the project supervisor.
 
-### Next Steps
 
-- Contact my supervisor for guidance regarding the duplicate-review policy.
-- Depending on the decision, either:
-  - rerun the affected stages of the preprocessing pipeline using the earliest duplicate-review policy, or
-  - continue with the current implementation.
-- Begin preparing the train/validation/test split notebook while awaiting feedback.
 
 ## 26 July 2026 – Benchmark Reproduction
 
@@ -189,8 +176,31 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - The `full` subset reproduced the Notebook 04 split counts exactly.
 - All 32 integrity checks passed.
 
-### Next Steps
+## 28 July 2026 – Graph Construction
 
-- Build the bipartite user-item graph from the training splits.
-- Derive item features from the cleaned metadata using the item mappings.
-- Implement the evaluation pipeline and validate it with a popularity baseline before training the recommendation models.
+### Completed
+
+- Added `src/graph.py` for constructing and validating the user–item graph.
+- Created `06_graph_construction.ipynb` to build graphs for all subsets under both splitting protocols.
+- Installed PyTorch with CUDA 12.8 and verified GPU support for the RTX 5070 Ti.
+- Confirmed that the graph loader reproduces the notebook graphs exactly.
+
+### Design Decisions
+
+- Used a single node index space for users and items.
+- Represented each interaction as bidirectional edges.
+- Applied LightGCN's symmetric normalization (`D^-1/2 A D^-1/2`) without self-loops.
+- Rebuilt graphs on demand instead of storing derived graph files.
+- Used the spectral radius as a correctness check for the normalized adjacency.
+- Used adaptive power iteration until convergence.
+
+### Key Findings
+
+- No validation or test interactions leaked into any training graph.
+- All adjacency matrices were symmetric and passed consistency checks.
+- All graphs reached the expected spectral radius of **1.000000**.
+- Leave-last-out produced exactly one giant component plus isolated nodes and nothing in between: 427 components for small (1 + 426 singletons), 693 for medium, 1,177 for full.
+- Timestamp graphs remained approximately **96% connected**, with most remaining nodes being expected cold users and cold items.
+- Graph sizes are manageable on the local GPU: small/last_out is 363,895 nodes and 3.66M directed edges, full/timestamp is 2.0M nodes and 26.2M.
+- All **54 validation checks** passed successfully.
+

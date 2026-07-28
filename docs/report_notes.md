@@ -272,3 +272,57 @@ Mention:
 - Timestamp protocol produced sufficient cold items for the planned cold-start evaluation.
 - `small` selected as the primary experimental dataset.
 - `medium` and `full` reserved for the scalability experiments.
+
+
+# Notebook 06 - Graph Construction
+
+Mention:
+
+- Converted the training interactions into a bipartite user–item graph for GNN training.
+- Assigned users and items to a shared node index space to construct a single adjacency matrix.
+- Represented each interaction as bidirectional edges.
+- Applied the standard LightGCN symmetric normalization (`D^-1/2 A D^-1/2`) without self-loops.
+- Graphs were generated separately for each subset and splitting protocol.
+
+---
+
+## Graph Verification
+
+Mention:
+
+- Verified that no validation or test interactions appeared in the training graphs.
+- Confirmed that all adjacency matrices were symmetric.
+- Verified the normalization using the spectral radius (expected value = 1).
+- Checked graph connectivity through connected component analysis.
+- Validated the graph implementation against the Notebook 05 preprocessing outputs.
+
+---
+
+## Graph Statistics
+
+Mention:
+
+- Number of nodes and edges for each experimental dataset.
+- Leave-last-out graphs consisted of one giant connected component plus isolated nodes.
+- Timestamp graphs remained approximately 96% connected, with most disconnected nodes corresponding to cold users and items.
+- Graph sizes were suitable for local GPU training.
+
+---
+
+## Implementation Choices
+
+Mention:
+
+- Graphs were rebuilt directly from the training interactions rather than stored on disk.
+- Power iteration was used to estimate the spectral radius until convergence.
+- GPU acceleration substantially reduced graph verification time.
+
+---
+
+## Experimental Pipeline
+
+Mention:
+
+- Graph construction uses only the training interactions.
+- The same graph-building procedure is applied consistently across all dataset sizes and splitting protocols.
+- The resulting graphs serve as the input for all graph-based recommendation models.
