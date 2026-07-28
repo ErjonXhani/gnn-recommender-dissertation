@@ -162,8 +162,35 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - The two protocols evaluate different populations: leave-last-out covers all 1,641,026 users, while the timestamp split covers 469,838 (28.63%) and leaves 36,208 users without training history.
 - All integrity checks passed successfully.
 
+## 28 July 2026 – Nested Dataset Subsets
+
+### Completed
+
+- Added `src/subsets.py` for user sampling, iterative 5-core filtering, and re-encoding.
+- Developed `05_nested_dataset_subsets.ipynb` to build the small/medium/full scalability ladder.
+- Ran a calibration step over six sampling fractions to select the subset sizes from measured interaction counts.
+- Built three nested subsets, generated both splitting protocols, and saved the interaction data, mappings, splits, cold-start lists, and evaluation samples.
+
+### Design Decisions
+
+- Sampled users as prefixes of a single shuffled permutation to guarantee nested subsets.
+- Re-applied 5-core filtering after sampling to preserve the minimum interaction constraint.
+- Re-encoded each subset to contiguous indices while preserving mappings back to the global indices for later metadata joins.
+- Kept the original timestamp cutoffs unchanged across all subset levels.
+- Built the `full` subset through the same pipeline so every level shares an identical directory structure.
+
+### Key Findings
+
+- The scalability ladder contains 2,346,776 / 6,297,459 / 15,473,536 interactions, giving near-geometric spacing between the three dataset sizes.
+- Mean user degree remained almost constant across the subsets, while mean item degree decreased noticeably, confirming that the subsets are not uniformly scaled versions of the full graph.
+- The subsets are exactly nested, with no users, items or interactions appearing in a smaller subset that are absent from a larger one.
+- Temporal leakage depended on the splitting protocol rather than dataset size. Leave-last-out showed almost identical leakage across all subsets, whereas the timestamp protocol eliminated it completely.
+- The `small` timestamp split contains 8,353 strictly cold items with 64,088 test interactions, providing sufficient data for the planned cold-start experiments.
+- The `full` subset reproduced the Notebook 04 split counts exactly.
+- All 32 integrity checks passed.
+
 ### Next Steps
 
-- Construct nested dataset subsets for the scalability experiments.
-- Build the bipartite user–item graph from the training partitions.
-- Generate item feature representations from the cleaned metadata.
+- Build the bipartite user-item graph from the training splits.
+- Derive item features from the cleaned metadata using the item mappings.
+- Implement the evaluation pipeline and validate it with a popularity baseline before training the recommendation models.

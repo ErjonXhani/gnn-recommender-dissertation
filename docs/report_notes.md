@@ -221,3 +221,54 @@ Mention:
 - Justification for using the timestamp split for dedicated cold-start experiments.
 - Importance of validating independently generated splits against the official benchmark to ensure reproducibility.
 
+## Notebook 05 Scalability Dataset Construction
+
+Mention:
+
+- Three nested datasets (`small`, `medium`, `full`) created for the scalability experiments.
+- Users sampled as nested prefixes of a single random permutation.
+- Iterative 5-core filtering applied after sampling.
+- User and item indices re-encoded while preserving mappings to the original global IDs.
+
+---
+
+## Dataset Calibration
+
+Mention:
+
+- Sampling fractions determined through a calibration experiment.
+- Final subset sizes selected based on the resulting interaction counts after 5-core filtering.
+- `small` dataset chosen to be comparable in scale to Amazon-Book.
+
+---
+
+## Dataset Characteristics
+
+Mention:
+
+- Final interaction counts for the three subsets.
+- Mean user degree remained nearly constant across subset sizes.
+- Mean item degree decreased as dataset size decreased.
+- Subsets are not uniformly scaled versions of the original graph.
+
+---
+
+## Dataset Verification
+
+Mention:
+
+- Verified that the subsets are exactly nested.
+- Confirmed that the `full` subset reproduced the Notebook 04 split counts.
+- All integrity checks passed successfully.
+
+---
+
+## Experimental Setup
+
+Mention:
+
+- Generated both Leave-Last-Out and Timestamp splits for every subset.
+- Original timestamp cutoffs reused across all subset levels.
+- Timestamp protocol produced sufficient cold items for the planned cold-start evaluation.
+- `small` selected as the primary experimental dataset.
+- `medium` and `full` reserved for the scalability experiments.
