@@ -130,7 +130,7 @@ Mention:
 
 - Independent reproduction increases confidence in preprocessing.
 - Duplicate-review policy identified as only methodological difference.
-- Awaiting supervisor decision on whether to align with official benchmark.
+
 
 
 ---
@@ -326,3 +326,133 @@ Mention:
 - Graph construction uses only the training interactions.
 - The same graph-building procedure is applied consistently across all dataset sizes and splitting protocols.
 - The resulting graphs serve as the input for all graph-based recommendation models.
+
+
+
+# Notebook 07 - Item Feature Construction
+
+## Overview
+
+Mention:
+
+- Converted the cleaned product metadata into numeric item features for the recommendation models.
+- Generated three text representations:
+  - **BLaIR** (primary encoder)
+  - **MiniLM** (general-purpose transformer baseline)
+  - **TF-IDF + SVD** (classical baseline)
+- Computed features once for all items and sliced them into each evaluation subset using the item mappings.
+
+---
+
+## Temporal Leakage in Metadata
+
+Mention:
+
+- Metadata was collected in 2023, after the interaction period used for evaluation.
+- `Best Sellers Rank` is a popularity measure recorded after the prediction period and would introduce temporal leakage.
+- It appeared in **56.3%** of items and was removed before encoding, with zero residual occurrences.
+- `Date First Available` was retained because a product's release date is available at prediction time.
+- Earlier preprocessing focused on data completeness and quality; this stage evaluated whether metadata fields were available at prediction time.
+
+---
+
+## Encoder Selection
+
+Mention:
+
+- Selected **BLaIR** as the primary encoder because it was pre-trained by the dataset authors on Amazon Reviews 2023 item metadata.
+- Used **MiniLM** and **TF-IDF + SVD** as comparison baselines rather than equal alternatives.
+- MiniLM evaluates whether a general-purpose language model performs competitively against a domain-specific encoder.
+- TF-IDF + SVD provides a classical non-neural baseline.
+- The comparison baselines are used only in the cold-start experiments, where item features are the only available information.
+- The BLaIR paper reports that general embedding benchmarks do not necessarily predict recommendation performance, motivating its use as the primary encoder.
+
+---
+
+## Text Encoding
+
+Mention:
+
+- Followed the BLaIR model card by using CLS pooling with L2 normalisation.
+- Measured the token-length distribution directly instead of estimating it from word counts.
+- Average tokenisation ratio: **1.57 tokens per word**.
+- Median sequence length: **402 tokens**.
+- 95th percentile: **982 tokens**.
+- Used **512 tokens** for BLaIR (RoBERTa's maximum), with **67.5%** of items fitting without truncation.
+- Metadata order (title, store, category, features, description, details) means truncation primarily removes detailed specifications rather than core product descriptions.
+- Used MiniLM with its native **256-token** input limit.
+- Encoding times:
+  - BLaIR: **19 minutes**
+  - MiniLM: **7.3 minutes**
+  - TF-IDF + SVD: **1.3 minutes**
+
+---
+
+## Embedding Quality
+
+Mention:
+
+- Used nearest-neighbour inspection to verify that embeddings captured meaningful semantic relationships.
+- Mean cosine similarity between random item pairs decreased from **0.645** to **0.003** after centring.
+- **165 of 768** embedding dimensions explain **95%** of the variance, indicating the embeddings remain well distributed rather than collapsing.
+- TF-IDF + SVD retained **26.4%** of the original TF-IDF variance using 256 components.
+
+---
+
+## Categorical Features
+
+Mention:
+
+- One-hot encoded `main_category` (39 levels, including 6,632 items with no recorded category).
+- Represented `store` only through the text embeddings rather than as a separate categorical feature.
+- `store` contains **49,344** distinct values, with the 200 most frequent covering only **29.8%** of items, making explicit encoding impractical.
+- Both `store` and `main_category` are already included in the textual metadata provided to the encoders.
+
+---
+
+## Feature Assembly
+
+Mention:
+
+- Centred and re-normalised the text embeddings before concatenating them with the categorical features.
+- One-hot vectors already have unit length, allowing both feature blocks to contribute on comparable scales without manually tuning weights.
+- Computed normalisation statistics over all items because product descriptions are available when items are listed and therefore do not introduce temporal leakage.
+- Final feature dimensions:
+  - **BLaIR:** 807
+  - **MiniLM:** 423
+  - **TF-IDF + SVD:** 295
+
+---
+
+## Feature Verification
+
+Mention:
+
+- Confirmed that all post-cutoff metadata fields were removed before encoding.
+- Verified that all text embeddings were correctly centred and normalised.
+- Confirmed exactly one category assignment per item.
+- Verified alignment between the global feature matrices and every subset's local item mapping.
+- Confirmed that every cold item has a valid feature vector.
+- Verified that the feature loader reconstructs every subset/encoder combination correctly.
+
+---
+
+## Implementation
+
+Mention:
+
+- Implemented reusable feature preparation and loading utilities in `src/features.py`.
+- Generated one global feature matrix per encoder and reconstructed subset feature matrices on demand instead of storing duplicate copies.
+
+---
+
+## Discussion
+
+Mention:
+
+- Metadata recorded after the interaction period represents a distinct form of temporal leakage that must be addressed before feature generation.
+- Data completeness and temporal validity are separate criteria when selecting metadata features.
+- Domain-specific language models may capture recommendation-relevant semantics more effectively than general-purpose encoders.
+- Sequence length introduces a trade-off between computational cost and information retention.
+- Item features are especially important in the cold-start setting because they provide the only available information for unseen items.
+- Qualitative nearest-neighbour examples suggested that BLaIR emphasises product function more than MiniLM or TF-IDF + SVD, but this observation must be validated quantitatively through the cold-start experiments.

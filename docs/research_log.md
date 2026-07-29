@@ -204,3 +204,36 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - Graph sizes are manageable on the local GPU: small/last_out is 363,895 nodes and 3.66M directed edges, full/timestamp is 2.0M nodes and 26.2M.
 - All **54 validation checks** passed successfully.
 
+
+## 29 July 2026 – Item Features
+
+### Completed
+
+- Added `src/features.py` for text preparation, encoding, feature assembly, and loading.
+- Developed `07_item_features.ipynb` to convert the cleaned metadata into numeric item features.
+- Audited the metadata for post-cutoff fields and removed those that could introduce temporal leakage.
+- Encoded all items using BLaIR, MiniLM, and TF-IDF+SVD.
+- Built a one-hot encoding of `main_category` and assembled the final feature matrices.
+- Installed `sentence-transformers` and `scikit-learn`.
+
+### Design Decisions
+
+- Selected BLaIR as the primary encoder because it was pre-trained by the dataset authors on Amazon Reviews 2023 item metadata. MiniLM and TF-IDF+SVD are used as comparison baselines for the cold-start experiments.
+- Followed the BLaIR model card by using CLS pooling with L2 normalisation.
+- Selected a 512-token limit for BLaIR after analysing the metadata token distribution.
+- Used MiniLM with its native 256-token input length.
+- Removed `Best Sellers Rank` before encoding to prevent temporal leakage while retaining `Date First Available`.
+- Represented `store` through the text embeddings rather than as a separate categorical feature, while one-hot encoding `main_category`.
+- Centred and re-normalised the text embeddings before combining them with the categorical features.
+
+### Key Findings
+
+- `Best Sellers Rank` was present in **56.3%** of items and was successfully removed before encoding.
+- Metadata length exceeded the encoder limit for many items, confirming that truncation is necessary. At a 512-token limit, **67.5%** of items are encoded without truncation.
+- BLaIR produced coherent item neighbourhoods, with sampled nearest neighbours consistently representing similar product types.
+- Centring substantially improved the embedding distribution, reducing the mean pairwise cosine similarity from **0.645** to **0.003**.
+- TF-IDF+SVD retained **26.4%** of the original TF-IDF variance using 256 components.
+- `store` contains **49,344** distinct values, making it unsuitable as a separate categorical feature, while `main_category` contains only **39** levels and was included as a one-hot feature.
+- Final feature dimensions were **807** (BLaIR), **423** (MiniLM), and **295** (TF-IDF+SVD).
+- All validation checks passed, including feature alignment, cold-item coverage, and reconstruction of all subset feature matrices.
+
