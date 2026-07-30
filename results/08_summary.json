@@ -1,0 +1,99 @@
+{
+  "notebook": "08_evaluation_and_baselines",
+  "subset": "small",
+  "protocols": [
+    "last_out",
+    "timestamp"
+  ],
+  "evaluation": {
+    "k_values": [
+      10,
+      20
+    ],
+    "eval_users": 50000,
+    "candidate_pool": "full catalogue, items never sampled",
+    "masking": "training items always; validation items also masked at test time"
+  },
+  "hyperparameters": {
+    "ItemKNN": {
+      "n_neighbours": 100,
+      "shrinkage": {
+        "last_out": 200.0,
+        "timestamp": 500.0
+      },
+      "selected_on": "validation ndcg@10"
+    },
+    "BPR-MF": {
+      "dim": 32,
+      "l2_reg": {
+        "last_out": 0.05,
+        "timestamp": 0.08
+      },
+      "learning_rate": 0.001,
+      "batch_size": 8192,
+      "selected_on": "validation ndcg@10 on a 10,000-user subset"
+    }
+  },
+  "results": {
+    "last_out / Popularity": {
+      "hit_rate@10": 0.0151,
+      "hit_rate@20": 0.02228,
+      "mrr@10": 0.005222,
+      "mrr@20": 0.00573,
+      "ndcg@10": 0.007517,
+      "ndcg@20": 0.009345,
+      "recall@10": 0.0151,
+      "recall@20": 0.02228
+    },
+    "timestamp / Popularity": {
+      "hit_rate@10": 0.0065,
+      "hit_rate@20": 0.00846,
+      "mrr@10": 0.000969,
+      "mrr@20": 0.001107,
+      "ndcg@10": 0.001245,
+      "ndcg@20": 0.001563,
+      "recall@10": 0.003002,
+      "recall@20": 0.004135
+    },
+    "last_out / ItemKNN": {
+      "hit_rate@10": 0.01736,
+      "hit_rate@20": 0.02646,
+      "mrr@10": 0.007089,
+      "mrr@20": 0.007708,
+      "ndcg@10": 0.009479,
+      "ndcg@20": 0.011764,
+      "recall@10": 0.01736,
+      "recall@20": 0.02646
+    },
+    "timestamp / ItemKNN": {
+      "hit_rate@10": 0.0073,
+      "hit_rate@20": 0.0122,
+      "mrr@10": 0.002585,
+      "mrr@20": 0.002922,
+      "ndcg@10": 0.002165,
+      "ndcg@20": 0.002941,
+      "recall@10": 0.003743,
+      "recall@20": 0.006397
+    },
+    "last_out / BPR-MF": {
+      "hit_rate@10": 0.01142,
+      "hit_rate@20": 0.01926,
+      "mrr@10": 0.004048,
+      "mrr@20": 0.004588,
+      "ndcg@10": 0.005758,
+      "ndcg@20": 0.007734,
+      "recall@10": 0.01142,
+      "recall@20": 0.01926
+    },
+    "timestamp / BPR-MF": {
+      "hit_rate@10": 0.00634,
+      "hit_rate@20": 0.00976,
+      "mrr@10": 0.003128,
+      "mrr@20": 0.003356,
+      "ndcg@10": 0.002227,
+      "ndcg@20": 0.002749,
+      "recall@10": 0.003046,
+      "recall@20": 0.004869
+    }
+  }
+}

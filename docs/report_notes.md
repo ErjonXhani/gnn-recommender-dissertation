@@ -456,3 +456,64 @@ Mention:
 - Sequence length introduces a trade-off between computational cost and information retention.
 - Item features are especially important in the cold-start setting because they provide the only available information for unseen items.
 - Qualitative nearest-neighbour examples suggested that BLaIR emphasises product function more than MiniLM or TF-IDF + SVD, but this observation must be validated quantitatively through the cold-start experiments.
+
+
+
+# Notebook 08 - Evaluation and Baseline Models
+
+### Evaluation Methodology
+
+- Explain why the evaluation framework was implemented and verified before any recommendation model.
+- Describe the full-catalogue evaluation protocol and justify sampling users but never items (Krichene & Rendle, 2020).
+- Explain the two evaluation protocols (leave-last-out and global timestamp) and why both are reported.
+- Justify masking both training and validation interactions during test evaluation.
+- Explain why HitRate@K and NDCG@K are reported for leave-last-out, while Recall@K is additionally reported for the timestamp split.
+
+### Baseline Models
+
+- Introduce Popularity, ItemKNN and BPR-MF as progressively stronger interaction-only baselines.
+- Explain why BPR-MF is equivalent to 0-layer LightGCN and therefore provides the controlled comparison for graph propagation.
+- Describe ItemKNN with shrunk cosine similarity and why shrinkage is required on sparse data.
+- Explain BPR optimisation, uniform negative sampling, explicit L2 regularisation and early stopping.
+
+### Hyperparameter Selection
+
+- State that all hyperparameters were selected using validation data only.
+- Mention the 10,000-user validation subset used during tuning and the full evaluation set used for early stopping and final reporting.
+- Record the final hyperparameters selected for ItemKNN and BPR-MF under both protocols.
+
+### Results
+
+- Report that the evaluator passed all verification checks:
+  - hand-computed synthetic example,
+  - random recommender expectation,
+  - independent NumPy implementation.
+- Present baseline performance under both evaluation protocols.
+- Highlight that the ranking of models changes completely between the two protocols.
+- Report the reduction in Popularity performance under the leakage-free timestamp split.
+- Report the improvement obtained by ItemKNN after adding shrinkage.
+- Report the improvement obtained by tuning BPR-MF compared with literature defaults.
+
+### Discussion
+
+- Discuss why the evaluation protocol changes model ranking (Ji et al., 2023).
+- Explain why Popularity benefits from temporal leakage under leave-last-out.
+- Explain why cosine similarity overestimates similarities between very rare items and how shrinkage corrects this.
+- Discuss why sparse interaction data limits matrix factorisation performance.
+- Motivate the next chapter by explaining that graph propagation is intended to overcome sparse user histories.
+
+### Key Quantitative Values
+
+- 50,000 evaluation users
+- 10,000 validation users
+- 105,298 catalogue items
+- 7.08 training interactions per user
+- Popularity NDCG@10: **0.00752 → 0.00124**
+- ItemKNN best shrinkage:
+  - 200 (leave-last-out)
+  - 500 (timestamp)
+- BPR-MF best embedding dimension: **32**
+- BPR-MF regularisation:
+  - 0.05 (leave-last-out)
+  - 0.08 (timestamp)
+- Full-catalogue evaluation (no item sampling)

@@ -237,3 +237,44 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - Final feature dimensions were **807** (BLaIR), **423** (MiniLM), and **295** (TF-IDF+SVD).
 - All validation checks passed, including feature alignment, cold-item coverage, and reconstruction of all subset feature matrices.
 
+
+## 30 July 2026 – Evaluation and Baseline Models
+
+### Completed
+
+- Added `src/evaluation.py`, `src/baselines.py`, `src/models.py` and `src/training.py`.
+- Developed `08_evaluation_and_baselines.ipynb` covering the evaluation pipeline and the three non-GNN baselines.
+- Verified the evaluator against hand-computed metrics, a random recommender, and an independent implementation before running any model.
+- Implemented and evaluated Popularity, ItemKNN and BPR-MF under both splitting protocols.
+- Tuned ItemKNN shrinkage and BPR-MF dimension and regularisation on validation data.
+
+### Design Decisions
+
+- Wrote and verified the evaluation code before implementing any model. A faulty evaluator does not raise an error, it returns a plausible but incorrect number, so it needed checking against something whose behaviour could be reasoned about independently.
+- Ranked every evaluation user against the complete item catalogue. Users are sampled, items never are, following Krichene and Rendle (2020), who show sampled item metrics are inconsistent with their exact versions and can reverse the ordering of models.
+- Reported HitRate@K and NDCG@K under leave-last-out, where Recall@K is identical to HitRate@K because each user has exactly one relevant item, and Recall@K under the timestamp protocol, where users average 2.10 relevant items.
+- Masked training items always, and validation items as well when evaluating on test, since the user has already consumed them by that point.
+- Selected all hyperparameters on validation data only. Test was evaluated once per model with the chosen configuration.
+- Used a 10,000-user validation subset for hyperparameter search and the full 50,000 users for early stopping and reported results.
+- Treated BPR-MF as also serving the role of 0-layer LightGCN, since LightGCN without propagation is exactly its embedding table trained with BPR. Notebook 09 will use the same loss, sampler, dimension and optimiser, making the graph comparison controlled.
+- Applied L2 regularisation explicitly to the embeddings in each batch rather than through the optimiser's weight decay, which would shrink every embedding on every step including those not involved in the batch.
+- Sampled negatives uniformly without rejecting known positives; with 7.08 training interactions per user out of 105,298 items the collision rate is below 0.01%.
+
+### Key Findings
+
+- **Model ranking reverses between the two evaluation protocols.** Under leave-last-out the order by NDCG@10 is ItemKNN (0.00948), Popularity (0.00752), BPR-MF (0.00576). Under the global timestamp split it is BPR-MF (0.00223), ItemKNN (0.00217), Popularity (0.00124). BPR-MF moves from last to first and Popularity from second to last. This is the effect described by Ji et al. (2023), observed directly rather than cited.
+- Popularity's NDCG@10 falls from 0.00752 to 0.00124 between protocols. Under leave-last-out its item counts include activity occurring after many test instances, so it is partly reading the future; under the timestamp split it is computed honestly and collapses.
+- ItemKNN with plain cosine similarity scored roughly a third of Popularity (HR@10 0.00418 against 0.01510). The diagnostic showed why: the median training count of a recommended item was 5, the minimum possible under 5-core filtering, against 3,136 for Popularity. Cosine's denominator penalises popular items so heavily that pairs supported by two users outrank pairs supported by hundreds.
+- Adding shrinkage to the similarity denominator, selected on validation, raised ItemKNN to HR@10 0.01736 and NDCG@10 0.00948, above Popularity on both protocols. Selected values were 200 for leave-last-out and 500 for timestamp.
+- BPR-MF at the LightGCN paper's default settings (dimension 64, regularisation 1e-4) overfitted immediately: training loss fell to 0.011 while validation NDCG declined from the first evaluation onwards. The model has 23.3M parameters fitted to 1.83M training interactions, about 12.7 parameters per observation.
+- Tuning recovered most of the gap. Dimension 32 with regularisation 0.05 (leave-last-out) and 0.08 (timestamp) was selected on validation. Regularisation above roughly 0.2 collapses the model entirely, producing results at random level.
+- BPR-MF still does not beat Popularity under leave-last-out (NDCG@10 0.00576 against 0.00752) but does under the timestamp protocol (0.00223 against 0.00124).
+- Literature default hyperparameters were unsuitable for this data in both ItemKNN and BPR-MF. Both were tuned on considerably denser datasets: Amazon-Book has 56.7 interactions per user and density 6.2e-4, against 9.1 and 8.6e-5 here.
+- Absolute metric values are low by design. Ranking is against the full catalogue of 105,298 items rather than a sampled subset, which Ji et al. note produces values much lower than sampled-metric results. Popularity nonetheless achieves 159 times the random hit rate.
+- All automated checks passed, including the evaluator agreeing exactly with an independent implementation on a 2,000-user sample.
+
+### Next Steps
+
+- Implement LightGCN, NGCF and GraphSAGE using the same training loop and evaluator.
+- Verify the LightGCN implementation against published Gowalla or Amazon-Book results before trusting its numbers on this dataset.
+- Consider whether the protocol-dependent ranking reversal warrants its own results subsection.
