@@ -273,8 +273,61 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - Absolute metric values are low by design. Ranking is against the full catalogue of 105,298 items rather than a sampled subset, which Ji et al. note produces values much lower than sampled-metric results. Popularity nonetheless achieves 159 times the random hit rate.
 - All automated checks passed, including the evaluator agreeing exactly with an independent implementation on a 2,000-user sample.
 
-### Next Steps
+## 31 July 2026 – Graph Model Implementation and LightGCN Reproduction
 
-- Implement LightGCN, NGCF and GraphSAGE using the same training loop and evaluator.
-- Verify the LightGCN implementation against published Gowalla or Amazon-Book results before trusting its numbers on this dataset.
-- Consider whether the protocol-dependent ranking reversal warrants its own results subsection.
+### Completed
+
+- Added `GraphRecommender`, `LightGCN`, `NGCF` and `GraphSAGE` to `src/models.py`, all sharing one interface with `MatrixFactorization`.
+- Added `mean_adjacency` to `src/graph.py` for GraphSAGE's row-normalised aggregation.
+- Extended `src/training.py` with a `sampling` option, moved L2 regularisation onto the layer-0 embeddings, and fixed the history record being dropped when early stopping fires.
+- Developed `09_model_implementation_and_reproduction.ipynb`: implementation verification followed by a reproduction of LightGCN on the authors' released Gowalla split.
+- Ran three seeds at the published configuration, plus one diagnostic run isolating the sampling scheme.
+
+### Design Decisions
+
+- Verified the implementation before running it on the dissertation data. Internal consistency is not correctness, so the check had to be against published numbers on data where the answer is known.
+- Used the 0-layer identity as the primary structural test: LightGCN without propagation is exactly matrix factorisation, so with the same seed it must produce identical embeddings and identical training results.
+- Recomputed one node's layer-1 embedding by hand from its neighbours to confirm the sparse multiplication implements the stated formula rather than something merely plausible.
+- Initialised the item feature projection at zero so that a model built with metadata starts exactly equal to its feature-free counterpart. The metadata ablation is then a strict nesting rather than a comparison of two different models.
+- Regularised the layer-0 embeddings rather than the propagated ones, matching the LightGCN and NGCF reference implementations. These are the only free parameters; for matrix factorisation the two are identical, so Notebook 08 is unaffected.
+- Followed the paper's protocol for the reproduction only. The released Gowalla data has no validation set and the authors select the best epoch on test, so the final-epoch value is reported as the headline with the best-epoch value stated separately. All experiments on the Amazon data use a proper validation split.
+- Adopted user-uniform sampling for every model in all later experiments, chosen for consistency with the reference implementations and alignment with per-user-averaged metrics, not because it scores higher.
+- Converted the adjacency to CSR, which halved training time (7.46s to 3.77s per epoch) at identical arithmetic.
+
+### Key Findings
+
+- **LightGCN reproduces.** Three seeds give recall@20 0.18184 ± 0.00004 and NDCG@20 0.15542 ± 0.00041, against published values of 0.1823 and 0.1555. NDCG is within seed variance; recall is 0.25% low.
+- **The sampling scheme accounts for most of the initial gap, and it is not described in the paper.** LightGCN's released code draws a user uniformly and then one of that user's items; iterating over interactions instead gives recall@20 0.1738 and NDCG@20 0.1482, roughly 4.6% below published on both metrics.
+- The sampler is worth 4.7% of recall here, more than the 3.9% the paper reports for increasing propagation depth from one layer to three. An undocumented implementation detail therefore mattered more than the mechanism the paper is about.
+- Part of the remaining 0.25% is estimator choice. The paper reports the best of roughly 100 test evaluations while these runs report the final epoch; on seed 1 those two estimators differ by 0.00024.
+- The 0-layer identity holds exactly at initialisation and to 1e-7 after five epochs. Both models are individually deterministic, so the residual is the order in which the loss and regularisation gradients are summed, not nondeterminism.
+- Parameter counts confirm the architectures: LightGCN has 11,644,640 parameters at dimension 32, exactly the two embedding tables and nothing else; NGCF adds 6,336 and GraphSAGE 4,160.
+- Propagation matches the definition to 7.45e-09 when one node's layer-1 embedding is recomputed by hand from its neighbours.
+- Published λ = 1e-4 corresponds to 5e-5 in this codebase, because the reference implementation carries a factor of ½ in the norm.
+- All checks passed.
+
+
+## 31 July 2026 – Sampler Change Applied to Notebook 08
+
+### Completed
+
+- Re-ran all trained baselines in `08_evaluation_and_baselines.ipynb` under user-uniform sampling, following the finding in Notebook 09.
+- Replaced the leave-last-out regularisation selection with a single consistent sweep, since the earlier values came from sweeps using different evaluators and epoch budgets and were not comparable to each other.
+- Extended the timestamp regularisation grid, which previously selected the boundary value.
+
+### Design Decisions
+
+- Applied user-uniform sampling to BPR-MF as well as the graph models. BPR-MF is 0-layer LightGCN and serves as the controlled comparison, so a different sampler would confound propagation with sampling and would understate the baseline in the direction that flatters the graph models.
+- Left Popularity, ItemKNN and Random untouched; they do not train, so no sampler applies.
+- Kept the exploratory sweeps in the notebook as the record of how the range was narrowed, and added a final sweep with a fixed evaluator, epoch budget and patience for the actual selection.
+
+### Key Findings
+
+- The sampler is worth considerably more on this data than on Gowalla. BPR-MF NDCG@10 rose from 0.00576 to 0.00693 under leave-last-out (+20%) and from 0.00223 to 0.00497 under the timestamp protocol (+123%).
+- The gain is largest where user histories are thinnest, consistent with user-uniform sampling giving low-degree users the same number of updates as heavy ones.
+- Selected regularisation increased on both protocols: 0.05 to 0.10 (leave-last-out) and 0.08 to 0.15 (timestamp).
+- Leave-last-out performance is flat across regularisation 0.05 to 0.12, varying by about 11% non-monotonically, so 0.10 is a selection rather than a distinguishable optimum. The timestamp sweep has a clear interior maximum at 0.15.
+- The protocol reversal survives, but is narrower. BPR-MF now reaches 92% of Popularity's NDCG@10 under leave-last-out, against 77% before.
+- Popularity and ItemKNN results reproduced exactly, confirming that only the sampler changed.
+- The paper-default configuration still overfits immediately: validation NDCG declines from the first evaluation onwards under both protocols.
+- All 28 checks passed.

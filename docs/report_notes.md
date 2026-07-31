@@ -504,16 +504,91 @@ Mention:
 
 ### Key Quantitative Values
 
-- 50,000 evaluation users
-- 10,000 validation users
+- 50,000 evaluation users (10,000-user subset used for hyperparameter search only)
 - 105,298 catalogue items
 - 7.08 training interactions per user
-- Popularity NDCG@10: **0.00752 → 0.00124**
-- ItemKNN best shrinkage:
-  - 200 (leave-last-out)
-  - 500 (timestamp)
-- BPR-MF best embedding dimension: **32**
-- BPR-MF regularisation:
-  - 0.05 (leave-last-out)
-  - 0.08 (timestamp)
 - Full-catalogue evaluation (no item sampling)
+- Training interactions per user: median 5, mean 7.08, 25th percentile 3, max 629
+- 58.7% of users have 5 or fewer training interactions
+
+**Model ranking by NDCG@10 reverses between protocols:**
+- leave-last-out: ItemKNN 0.00948 > Popularity 0.00752 > BPR-MF 0.00693
+- timestamp: BPR-MF 0.00497 > ItemKNN 0.00217 > Popularity 0.00124
+
+**Sampling scheme (see Notebook 09):**
+- BPR-MF NDCG@10, interaction-uniform to user-uniform:
+  leave-last-out 0.00576 → 0.00693 (+20%), timestamp 0.00223 → 0.00497 (+123%)
+- selected regularisation moved 0.05 → 0.10 (leave-last-out) and 0.08 → 0.15 (timestamp)
+
+**Popularity across protocols:**
+- NDCG@10: 0.00752 → 0.00124
+- achieves 159x the random hit rate despite low absolute values
+
+**ItemKNN:**
+- HR@10 before and after shrinkage: 0.00418 → 0.01736
+- median training count of recommended item: 5 → 280
+- best shrinkage: 200 (leave-last-out), 500 (timestamp)
+
+**BPR-MF:**
+- parameters at default settings: 23.3M for 1.83M training interactions
+  (12.7 per observation)
+- best embedding dimension: 32; dimension had little effect (16/32/64 within 2% at
+  fixed regularisation), so regularisation rather than capacity is the binding constraint
+- validation NDCG@10 is flat across regularisation 0.05–0.12 under leave-last-out
+
+
+# Notebook 09 - Model Implementation and Reproduction
+
+### Implementation Verification
+
+- Explain why implementation verification precedes any experiment: an incorrect model produces plausible numbers rather than an error.
+- Present the 0-layer identity as the primary structural test. LightGCN without propagation is exactly matrix factorisation, so the check is an equality rather than a plausibility argument.
+- Report that propagation was confirmed by recomputing a node's layer-1 embedding by hand from its neighbours.
+- Report that parameter counts match the architectures exactly, confirming LightGCN carries no weights above its embedding tables.
+- Explain the zero-initialised feature projection and why it makes the metadata ablation a strict nesting.
+
+### Reproduction Protocol
+
+- State what constitutes a successful reproduction: matching published figures on the authors' own released split, using their configuration, across multiple seeds.
+- Explain why Gowalla was chosen: the authors released the exact train/test files, so the split is not a source of disagreement.
+- Note the protocol asymmetry. The released data has no validation set and the paper selects the best epoch on test; this notebook follows that protocol and states it explicitly, while all Amazon experiments use a proper validation split.
+- Record the hyperparameter mapping: published λ = 1e-4 corresponds to 5e-5 here because the reference implementation carries a factor of ½ in the regularisation term.
+
+### Results
+
+- Present the three-seed reproduction against published values.
+- Present the sampler comparison and the training-curve figure, noting that the two curves are identical until roughly epoch 180 before diverging systematically.
+- Note that the loss curves are not directly comparable across samplers, since each is averaged over a different sampling distribution.
+
+### Discussion
+
+- Discuss what the sampler result implies for reproducibility in this literature: an implementation detail absent from the paper was worth more than the architectural change the paper argues for.
+- Explain why user-uniform sampling suits a per-user-averaged metric, and why the justification is fidelity and consistency rather than performance.
+- Discuss the residual 0.25% on recall and the contribution of maximum-over-evaluations reporting.
+- Note that a seed standard deviation of 4e-5 means differences between models in the following chapter are easily resolvable.
+- Caution that Gowalla users hold roughly 27 interactions against 7 here, so the benefit of propagation should not be assumed to transfer.
+
+### Key Quantitative Values
+
+**Gowalla (LightGCN's released split):**
+- 29,858 users, 40,981 items, 1,027,370 interactions, density 0.00084
+- train 810,128 / test 217,242; median 4 test items per user
+
+**Reproduction, 3 layers, dimension 64, 1000 epochs, 3 seeds:**
+- recall@20 0.18184 ± 0.00004 (published 0.1823, −0.25%)
+- NDCG@20 0.15542 ± 0.00041 (published 0.1555, within seed variance)
+
+**Sampling scheme, seed 42:**
+- interaction-uniform: recall@20 0.1738, NDCG@20 0.1482 (−4.6%, −4.7%)
+- user-uniform: recall@20 0.1819, NDCG@20 0.1551 (−0.22%, −0.26%)
+- sampler effect 4.7% against 3.9% for one layer to three in the paper's Table 3
+
+**Implementation checks:**
+- 0-layer identity: exact at initialisation, 1e-7 after five epochs
+- propagation vs hand computation: 7.45e-09
+- LightGCN parameters at dimension 32: 11,644,640, exactly the embedding tables
+- NGCF +6,336 parameters, GraphSAGE +4,160
+
+**Performance:**
+- CSR adjacency halved epoch time: 7.46s → 3.77s
+- 63 minutes per 1000-epoch Gowalla run on an RTX 5070 Ti Laptop GPU

@@ -28,6 +28,7 @@ def train_bpr(
     batch_size: int = 8192,
     learning_rate: float = 1e-3,
     l2_reg: float = 1e-4,
+    sampling: str = "interaction",
     patience: int = 5,
     eval_every: int = 10,
     selection_metric: str = "ndcg@10",
@@ -37,14 +38,26 @@ def train_bpr(
 ) -> Dict[str, object]:
     """Train a model with BPR and select the best epoch using validation performance.
 
-    Negatives are sampled uniformly without rejecting known positives. Users have roughly
-    7 training interactions from a catalogue of 105,298 items, so the expected collision
-    rate is below 0.01% and rejection sampling would add unnecessary cost.
+    ``sampling`` controls how training pairs are drawn. ``"interaction"`` iterates over
+    the interaction table, so a user's number of updates is proportional to their degree.
+    ``"user"`` draws a user uniformly and then one of their items, which is what the
+    LightGCN reference implementation does and gives every user the same expected number
+    of updates. The choice matters because the metrics are averaged per user.
 
-    L2 regularisation is applied only to the embeddings involved in each batch. Optimiser
-    weight decay would also update embeddings absent from the batch, producing a different
-    objective for sparse embedding tables.
+    Negatives are sampled uniformly without rejecting known positives. On the Amazon
+    data users hold roughly 7 items from a catalogue of 105,298, so the expected
+    collision rate is under 0.01%; on Gowalla it is 0.07%. Rejection sampling would add
+    cost for no measurable difference.
+
+    L2 regularisation is applied only to the embeddings involved in each batch, and to
+    the layer-0 embeddings rather than the propagated ones. Optimiser weight decay would
+    also update embeddings absent from the batch, producing a different objective for
+    sparse embedding tables.
     """
+
+    if sampling not in ("interaction", "user"):
+        raise ValueError(f"sampling must be 'interaction' or 'user', got {sampling!r}")
+    
     model = model.to(device)
     optimiser = torch.optim.Adam(model.parameters(), lr=learning_rate)
     generator = torch.Generator(device=device).manual_seed(seed)
@@ -53,6 +66,20 @@ def train_bpr(
     items = torch.as_tensor(train["item_idx"].to_numpy(), dtype=torch.long, device=device)
     n_train = len(users)
 
+    if sampling == "user":
+        # LightGCN samples a user uniformly, then one of that user's items, rather than
+        # sampling interactions. Low-degree users get the same number of updates as
+        # heavy ones, which matters because the metrics are averaged per user.
+        order_by_user = np.argsort(train["user_idx"].to_numpy(), kind="stable")
+        counts = np.bincount(train["user_idx"].to_numpy(), minlength=model.n_users)
+        indptr = np.zeros(model.n_users + 1, dtype=np.int64)
+        np.cumsum(counts, out=indptr[1:])
+
+        indptr = torch.as_tensor(indptr, device=device)
+        sorted_items = torch.as_tensor(
+            train["item_idx"].to_numpy()[order_by_user], dtype=torch.long, device=device)
+        active = torch.as_tensor(np.flatnonzero(counts > 0), dtype=torch.long, device=device)
+
     history = []
     best_score, best_epoch, best_state = -np.inf, -1, None
     epochs_without_improvement = 0
@@ -60,6 +87,15 @@ def train_bpr(
     for epoch in range(1, epochs + 1):
         model.train()
         t0 = time.time()
+
+        if sampling == "user":
+            drawn = active[torch.randint(0, len(active), (n_train,),
+                                         generator=generator, device=device)]
+            starts, spans = indptr[drawn], indptr[drawn + 1] - indptr[drawn]
+            picks = (torch.rand(n_train, generator=generator, device=device)
+                     * spans).long().clamp_(max=spans - 1)
+            users, items = drawn, sorted_items[starts + picks]
+
         order = torch.randperm(n_train, generator=generator, device=device)
         epoch_loss = 0.0
 
@@ -76,8 +112,13 @@ def train_bpr(
             difference = (e_u * e_pos).sum(1) - (e_u * e_neg).sum(1)
             loss = F.softplus(-difference).mean()
 
+            # regularise the layer-0 embeddings rather than the propagated ones.
+            # Those are the actual free parameters, and it is what LightGCN and NGCF do.
+            base_users, base_items = model.base_embeddings()
             regularisation = l2_reg * (
-                e_u.pow(2).sum() + e_pos.pow(2).sum() + e_neg.pow(2).sum()
+                base_users[batch_users].pow(2).sum()
+                + base_items[positives].pow(2).sum()
+                + base_items[negatives].pow(2).sum()
             ) / len(batch)
 
             optimiser.zero_grad(set_to_none=True)
@@ -89,6 +130,7 @@ def train_bpr(
         record = {"epoch": epoch, "loss": epoch_loss / n_train,
                   "seconds": time.time() - t0}
 
+        should_stop = False
         if evaluator is not None and (epoch % eval_every == 0 or epoch == epochs):
             model.eval()
             means = evaluator.evaluate(model.score_fn(), return_per_user=False)["means"]
@@ -107,12 +149,14 @@ def train_bpr(
                       f"val {selection_metric} {score:.5f}"
                       f"{'  *' if best_epoch == epoch else ''}", flush=True)
 
-            if epochs_without_improvement >= patience:
-                if verbose:
-                    print(f"  stopping: no improvement for {patience} evaluations")
-                break
+            should_stop = epochs_without_improvement >= patience
 
         history.append(record)
+
+        if should_stop:
+            if verbose:
+                print(f"  stopping: no improvement for {patience} evaluations")
+            break
 
     if best_state is not None:
         model.load_state_dict(best_state)

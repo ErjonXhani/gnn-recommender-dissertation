@@ -26,6 +26,7 @@ __all__ = [
     "verify_symmetry",
     "count_held_out_edges",
     "graph_statistics",
+    "mean_adjacency",
 ]
 
 
@@ -204,3 +205,23 @@ def load_graph(subsets_dir, subset: str, protocol: str) -> Dict[str, object]:
         "n_items": n_items,
         "n_nodes": n_users + n_items,
     }
+
+def mean_adjacency(
+    edge_index: torch.Tensor,
+    n_nodes: int,
+    device: str = "cpu",
+) -> torch.Tensor:
+    """Row-normalised adjacency D^-1 A, for mean aggregation over neighbours.
+
+    GraphSAGE averages its neighbours; LightGCN and NGCF use the symmetric
+    normalisation D^-1/2 A D^-1/2 instead. Multiplying by this matrix gives each node
+    the mean of its neighbours' representations, so every neighbour contributes equally
+    regardless of its own degree.
+    """
+    deg = node_degrees(edge_index, n_nodes).clamp(min=1.0)
+    values = 1.0 / deg[edge_index[0]]
+
+    adj = torch.sparse_coo_tensor(
+        edge_index, values, size=(n_nodes, n_nodes), device=device
+    )
+    return adj.coalesce()
