@@ -331,3 +331,41 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - Popularity and ItemKNN results reproduced exactly, confirming that only the sampler changed.
 - The paper-default configuration still overfits immediately: validation NDCG declines from the first evaluation onwards under both protocols.
 - All 28 checks passed.
+
+
+## 1 August 2026 – Notebook 10: Tuning Setup and LightGCN on Leave-Last-Out
+
+### Completed
+
+- Started `10_collaborative_comparison.ipynb`: configuration, per-protocol graphs and adjacencies, and the three evaluators (test, validation, and a 10,000-user tuning subset).
+- Built a caching tuning harness that writes each run's history to `results/10_tuning/` and skips configurations already completed, so an interrupted session loses only the run in progress.
+- Established the epoch budget from a 500-epoch convergence probe.
+- Tuned LightGCN on the leave-last-out protocol over a joint depth × regularisation grid.
+
+### Design Decisions
+
+- Built a separate graph per protocol from that protocol's training set, and asserted that no validation or test interaction appears as an edge. Propagation over held-out edges would leak the answer without changing anything visible in the metrics.
+- Stored both adjacencies in CSR format, which halved epoch time relative to COO at identical arithmetic.
+- Fixed the epoch budget at 300 for every configuration. A uniform budget matters more than the exact value, since models converge at different rates and per-model budgets would confound convergence speed with model quality.
+- Kept the learning rate at 1e-3. Tested 3e-3, which converged only about 1.5 times faster and produced a visibly noisier validation curve; not worth introducing a difference from the BPR-MF baseline.
+- Used a 10,000-user validation subset for the grid search, with the full evaluation set reserved for reported results.
+- Tuned depth and regularisation jointly rather than sequentially, after finding that they interact.
+- Used BPR-MF at its own tuned regularisation as the depth-0 anchor, rather than LightGCN with zero layers at the graph model's regularisation, which would have been a straw man.
+- Keyed the cache on model, protocol, depth, regularisation, epoch budget and seed, so runs at different budgets cannot silently share a file.
+
+### Key Findings
+
+- **Graph models need far weaker regularisation than matrix factorisation.** LightGCN's optimum is 3e-3 against BPR-MF's 0.10, roughly thirty times smaller. Propagation averages each embedding with its neighbours and is itself a regulariser, and the loss gradient reaching a layer-0 embedding is diluted through the propagation layers while the L2 penalty applies directly.
+- **Comparing hyperparameters at a fixed epoch budget confounds regularisation strength with convergence speed.** Stronger regularisation converges more slowly but reaches higher: at 150 epochs the surface appeared flat, but at 300 epochs 3e-4 peaked at epoch 120 and then declined, while 1e-3 was still improving at epoch 230.
+- **Depth and regularisation interact, and optimal regularisation falls monotonically with depth**: 1e-2, 3e-3, 3e-3, 1e-3 for one to four layers. Deeper models receive more smoothing from propagation and need less explicit shrinkage.
+- **Most of the benefit of propagation comes from the first hop.** With regularisation tuned separately at each depth, one layer gives +27.3% over BPR-MF, three layers +33.7%, and four layers falls back to +29.2%. A fixed-regularisation sweep understated the one-layer result by 11.6% and made depth appear far more important than it is.
+- Selected configuration for LightGCN under leave-last-out: 3 layers, regularisation 3e-3, validation NDCG@10 0.012740 against BPR-MF's 0.00953.
+- A 500-epoch convergence probe showed no reliable improvement past epoch 300. The apparent peak at epoch 500 was the maximum of twenty-one noisy evaluations on a flat plateau, roughly two standard deviations above the plateau mean - the same maximisation bias identified in LightGCN's published Gowalla figure.
+- Measured cost per epoch on this data: LightGCN 7.07s, NGCF 11.42s, GraphSAGE 6.87s. Sparse propagation is far more expensive here than arithmetic alone predicts, because the graph averages 10 neighbours per node against Gowalla's 23 and short rows multiply per-row overhead.
+
+### Next Steps
+
+- Probe regularisation for NGCF and GraphSAGE at their default depths, then run their depth grids.
+- Repeat tuning under the timestamp protocol.
+- Final runs: three models, two protocols, five seeds, at the selected configurations.
+- Report the depth curve as a result in its own right, noting that it is measured at per-depth regularisation optima.
