@@ -203,14 +203,21 @@ class GraphSAGE(GraphRecommender):
 
     ``normalise_output`` follows the paper. It bounds scores to [-1, 1], which caps the
     margin BPR can achieve, so it is exposed as a switch rather than hard-coded.
+
+    ``final_activation`` controls whether ReLU is applied to the last layer. With it on,
+    every embedding lies in the non-negative orthant, so every score is forced positive
+    and the model cannot express a strong negative preference. Turning it off is common
+    for GNNs used as embedding models and is tested rather than assumed.
     """
 
     def __init__(self, *args, adjacency: torch.Tensor, n_layers: int = 2,
-                 normalise_output: bool = True, **kwargs):
+                 normalise_output: bool = True, final_activation: bool = True,
+                 **kwargs):
         super().__init__(*args, **kwargs)
         self.adjacency = adjacency          # row-normalised, from graph.mean_adjacency
         self.n_layers = n_layers
         self.normalise_output = normalise_output
+        self.final_activation = final_activation
 
         self.transforms = nn.ModuleList(
             [nn.Linear(2 * self.dim, self.dim) for _ in range(n_layers)])
@@ -218,8 +225,10 @@ class GraphSAGE(GraphRecommender):
     def propagate(self, nodes: torch.Tensor):
         for layer in range(self.n_layers):
             neighbours = torch.sparse.mm(self.adjacency, nodes)
-            nodes = F.relu(self.transforms[layer](
-                torch.cat([nodes, neighbours], dim=1)))
-            if self.normalise_output or layer < self.n_layers - 1:
+            nodes = self.transforms[layer](torch.cat([nodes, neighbours], dim=1))
+            last = layer == self.n_layers - 1
+            if not last or self.final_activation:
+                nodes = F.relu(nodes)
+            if not last or self.normalise_output:
                 nodes = F.normalize(nodes, p=2, dim=1)
         return self._split(nodes)

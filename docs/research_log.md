@@ -363,9 +363,64 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - A 500-epoch convergence probe showed no reliable improvement past epoch 300. The apparent peak at epoch 500 was the maximum of twenty-one noisy evaluations on a flat plateau, roughly two standard deviations above the plateau mean - the same maximisation bias identified in LightGCN's published Gowalla figure.
 - Measured cost per epoch on this data: LightGCN 7.07s, NGCF 11.42s, GraphSAGE 6.87s. Sparse propagation is far more expensive here than arithmetic alone predicts, because the graph averages 10 neighbours per node against Gowalla's 23 and short rows multiply per-row overhead.
 
+
+## 2 August 2026 – NGCF Reproduction on Gowalla
+
+### Completed
+
+- Added Section 5 to `09_models_and_verification.ipynb`: an external check of the NGCF implementation against published Gowalla results, using the same graph, evaluator, sampler and training loop as the LightGCN reproduction.
+- Searched regularisation over 1e-5, 1e-4 and 1e-3 at the paper's embedding size of 64 and 3 propagation layers.
+
+### Design Decisions
+
+- Verified NGCF before reporting anything about it, because the results on the Amazon data include a negative claim - that NGCF underperforms matrix factorisation - and a negative claim about a published method is only as strong as the implementation behind it.
+- Used embedding size 64 and 3 layers to match the published configuration. Regularisation was searched rather than assumed, since the comparison table does not state it.
+- Reused the Gowalla split, graph and evaluator built for the LightGCN reproduction, so any difference between the two models is attributable to the model rather than the pipeline.
+
+### Key Findings
+
+- **NGCF reproduces.** Best result recall@20 0.15349 and NDCG@20 0.12224, against published values of 0.1569 and 0.1327: 2.2% and 7.9% below.
+- Both figures are lower bounds. Regularisation 1e-3 was the highest value tested and the run was still improving at epoch 400, so the true reproduction is likely closer.
+- Recall reproduces more closely than NDCG, unlike LightGCN where both metrics were off by the same 0.25%. Retrieving approximately the right items but ordering them slightly worse points to a small residual difference, most plausibly dropout: this implementation applies a single message dropout at 0.1 where NGCF uses both message and node dropout.
+- At regularisation 1e-5 the model peaks at epoch 25 with recall@20 0.12847 and then declines while training loss keeps falling, which is straightforward overfitting at that setting.
+- **The consequence for the dissertation is that the same NGCF implementation reaches 98% of published recall on Gowalla and loses to matrix factorisation on Amazon Electronics.** The failure therefore belongs to the data regime, not to the code.
+- NGCF is considerably more expensive than LightGCN on the same graph: roughly 15s per epoch on Gowalla at dimension 64 against LightGCN's 3.8s, owing to two weight matrices and an elementwise interaction term per layer.
+
 ### Next Steps
 
-- Probe regularisation for NGCF and GraphSAGE at their default depths, then run their depth grids.
-- Repeat tuning under the timestamp protocol.
-- Final runs: three models, two protocols, five seeds, at the selected configurations.
-- Report the depth curve as a result in its own right, noting that it is measured at per-depth regularisation optima.
+- Tune all three models under the timestamp protocol, starting with a single LightGCN probe before committing to the full sweep.
+- Note in the methodology that LightGCN and NGCF are verified reproductions while GraphSAGE is an adaptation, since it has no published collaborative filtering benchmark and its output normalisation was disabled.
+
+
+## 2 August 2026 – Notebook 10: NGCF and GraphSAGE on Leave-Last-Out
+
+### Completed
+
+- Tuned NGCF and GraphSAGE on the leave-last-out protocol: regularisation at the model's default depth, then depth at the selected regularisation.
+- Diagnosed why GraphSAGE was failing to train and fixed it.
+- Added a `final_activation` switch to `GraphSAGE` and tested whether the output nonlinearity helps or hurts.
+- Extended the cache key to include keyword overrides, so architectural variants cannot share a file with the default configuration.
+
+### Design Decisions
+
+- Tuned each model by coordinate descent rather than a full grid: regularisation at the default depth, then depth, then regularisation re-checked at the selected depth. A full joint grid for three models across two protocols is not affordable at roughly 300 epochs per run, and the interaction is weaker than the main effects.
+- Re-checked GraphSAGE's regularisation at the depth its sweep selected, since its two coordinates initially disagreed. NGCF needed no such check because both sweeps agreed on 3 layers.
+- Kept `normalise_output` and `final_activation` defaulting to the paper's behaviour in `models.py`, passing the chosen values explicitly at the call site so the deviation is visible in the notebook rather than buried in a class default.
+- Stopped tuning GraphSAGE once the variation within a single run exceeded the differences between configurations. Further search would have been fitting noise.
+
+### Key Findings
+
+- **GraphSAGE could not train at all in its published form.** Training loss moved only from 0.558 to 0.447 over 300 epochs, against LightGCN's 0.682 to 0.051. The cause is structural: ReLU on the final layer confines embeddings to the non-negative orthant and L2 normalisation projects them onto the unit sphere, so every score is a cosine similarity bounded in [0, 1] and BPR cannot open a margin wider than 1. Disabling the output normalisation raised validation NDCG@10 from 0.000976 to 0.006032, a sixfold improvement.
+- **Removing the final nonlinearity made GraphSAGE worse, not better** - 0.004750 against 0.006393 at the same regularisation, a 26% loss. This is mild counter-evidence to LightGCN's claim that nonlinear activation is harmful in collaborative filtering: the claim does not generalise across architectures.
+- **All three models peak at three propagation layers**, independently and on very different absolute scales.
+- GraphSAGE overfits rather than underfits. Its final training loss (0.031) is lower than LightGCN's (0.051) while its validation score is 40% worse, and it peaks around epoch 30 before declining. This is the opposite failure mode to the one LightGCN's authors report for NGCF, which fits the training data less well.
+- GraphSAGE's validation curve is noisy enough that selection is unreliable: within one run the score swings between 0.0051 and 0.0078, a band as wide as the entire spread across its three regularisation values.
+- **Selected configurations and validation NDCG@10 under leave-last-out:** LightGCN 0.012740 (3 layers, reg 3e-3), BPR-MF 0.009530, NGCF 0.007964 (3 layers, reg 1e-2), GraphSAGE 0.007793 (3 layers, reg 3e-3, output normalisation disabled).
+- **Both graph models other than LightGCN underperform matrix factorisation.** This is stronger than the result LightGCN's authors report, where NGCF beats matrix factorisation on Gowalla. The difference is plausibly sparsity: users here hold about 7 interactions against Gowalla's 27, leaving less signal to justify the additional parameters.
+- The ranking is not an artefact of the fixed epoch budget. Several configurations of NGCF and GraphSAGE did hit the 300-epoch ceiling, but the selected configuration of each converged inside it - NGCF peaking at epoch 230 and GraphSAGE at epoch 30.
+
+### Next Steps
+
+- Verify the NGCF implementation against published Gowalla results before reporting the negative claim.
+- Tune all three models under the timestamp protocol.
+- Final runs across five seeds, then significance testing in Notebook 12.

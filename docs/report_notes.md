@@ -592,3 +592,21 @@ Mention:
 **Performance:**
 - CSR adjacency halved epoch time: 7.46s → 3.77s
 - 63 minutes per 1000-epoch Gowalla run on an RTX 5070 Ti Laptop GPU
+
+
+### NGCF Reproduction
+
+- Explain why NGCF required the same external verification as LightGCN: the Amazon results contain a negative claim about a published method, and such a claim is only as strong as the implementation.
+- Report reproduction to within 2.2% on recall@20 using the same graph, evaluator and training loop as the LightGCN reproduction.
+- State the metric asymmetry honestly: recall reproduces closely, NDCG less so, most plausibly because this implementation uses a single message dropout where NGCF uses both message and node dropout.
+- Note that both figures are lower bounds, since the selected regularisation sat at the top of the searched range and the run had not converged at the epoch limit.
+- Draw the conclusion that matters: the same implementation reaches 98% of published recall on Gowalla and loses to matrix factorisation on Amazon Electronics, so the difference is attributable to the data rather than the code.
+- State the limitation that GraphSAGE cannot be verified this way. It is not a standard collaborative filtering baseline with published figures on these datasets, and its output normalisation was disabled after testing. It is therefore an adaptation rather than a reproduction, and should be described as such throughout.
+
+### Key Quantitative Values (NGCF reproduction)
+
+- Gowalla, 3 layers, embedding size 64, 400 epochs, user-uniform sampling
+- recall@20 0.15349 (published 0.1569, −2.2%)
+- NDCG@20 0.12224 (published 0.1327, −7.9%)
+- selected regularisation 1e-3; at 1e-5 the model peaks at epoch 25 (recall@20 0.12847) and then overfits
+- cost: ~15s per epoch against LightGCN's 3.8s on the same graph
