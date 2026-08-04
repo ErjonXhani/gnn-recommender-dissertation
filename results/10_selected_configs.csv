@@ -1,0 +1,9 @@
+protocol,model,dim,layers,l2_reg,learning_rate,batch_size,sampling,max_epochs,normalise_output,final_activation
+last_out,BPR-MF,32,0,0.1,0.001,8192,user,300,,
+last_out,GraphSAGE,32,3,0.003,0.001,8192,user,300,False,True
+last_out,LightGCN,32,3,0.003,0.001,8192,user,300,,
+last_out,NGCF,32,3,0.01,0.001,8192,user,300,,
+timestamp,BPR-MF,32,0,0.15,0.001,8192,user,300,,
+timestamp,GraphSAGE,32,3,0.0003,0.001,8192,user,300,False,True
+timestamp,LightGCN,32,3,0.0003,0.001,8192,user,300,,
+timestamp,NGCF,32,3,0.01,0.001,8192,user,300,,

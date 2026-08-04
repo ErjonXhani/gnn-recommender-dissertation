@@ -1,0 +1,125 @@
+{
+  "notebook": "10_hyperparameter_tuning",
+  "subset": "small",
+  "protocols": [
+    "last_out",
+    "timestamp"
+  ],
+  "seeds": {
+    "graph_models": [
+      42,
+      1,
+      2
+    ],
+    "BPR-MF": [
+      42,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "training": {
+    "epochs": 300,
+    "dim": 32,
+    "batch_size": 8192,
+    "learning_rate": 0.001,
+    "sampling": "user",
+    "patience_epochs": 100,
+    "eval_every": {
+      "BPR-MF": 2,
+      "graph_models": 10
+    },
+    "selection_metric": "ndcg@10"
+  },
+  "tuning": {
+    "method": "coordinate descent: regularisation, then depth, then regularisation re-checked at the selected depth",
+    "runs": 49,
+    "selected": {
+      "last_out": {
+        "BPR-MF": {
+          "l2_reg": 0.1
+        },
+        "LightGCN": {
+          "l2_reg": 0.003,
+          "n_layers": 3
+        },
+        "NGCF": {
+          "l2_reg": 0.01,
+          "n_layers": 3
+        },
+        "GraphSAGE": {
+          "l2_reg": 0.003,
+          "n_layers": 3,
+          "overrides": {
+            "normalise_output": false,
+            "final_activation": true
+          }
+        }
+      },
+      "timestamp": {
+        "BPR-MF": {
+          "l2_reg": 0.15
+        },
+        "LightGCN": {
+          "l2_reg": 0.0003,
+          "n_layers": 3
+        },
+        "NGCF": {
+          "l2_reg": 0.01,
+          "n_layers": 3
+        },
+        "GraphSAGE": {
+          "l2_reg": 0.0003,
+          "n_layers": 3,
+          "overrides": {
+            "normalise_output": false,
+            "final_activation": true
+          }
+        }
+      }
+    }
+  },
+  "results_ndcg@10": {
+    "last_out / BPR-MF": {
+      "mean": 0.006404829304665327,
+      "std": 0.0006876834153527869,
+      "seeds": 5
+    },
+    "last_out / GraphSAGE": {
+      "mean": 0.004254855991651614,
+      "std": 0.00019514322595427173,
+      "seeds": 3
+    },
+    "last_out / LightGCN": {
+      "mean": 0.008124100354810556,
+      "std": 6.570082934119323e-05,
+      "seeds": 3
+    },
+    "last_out / NGCF": {
+      "mean": 0.004245576603959004,
+      "std": 0.00012959728336667592,
+      "seeds": 3
+    },
+    "timestamp / BPR-MF": {
+      "mean": 0.004649654775857925,
+      "std": 0.0003995251070947537,
+      "seeds": 5
+    },
+    "timestamp / GraphSAGE": {
+      "mean": 0.0013429514753321807,
+      "std": 0.0001430794665694772,
+      "seeds": 3
+    },
+    "timestamp / LightGCN": {
+      "mean": 0.001575416885316372,
+      "std": 0.0001975268252474575,
+      "seeds": 3
+    },
+    "timestamp / NGCF": {
+      "mean": 0.0015011874105160434,
+      "std": 0.00010298030941433337,
+      "seeds": 3
+    }
+  }
+}
