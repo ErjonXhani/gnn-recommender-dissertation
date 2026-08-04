@@ -541,30 +541,39 @@ Mention:
 
 ### Implementation Verification
 
-- Explain why implementation verification precedes any experiment: an incorrect model produces plausible numbers rather than an error.
+- Explain why implementation verification precedes any experiment: an incorrect model produces plausible numbers rather than an error, so correctness cannot be inferred from results.
+- Present the three verification steps as complementary: the 0-layer identity tests everything except propagation, the hand-computed layer-1 embedding tests propagation itself, and reproduction against published results tests the whole pipeline end to end.
 - Present the 0-layer identity as the primary structural test. LightGCN without propagation is exactly matrix factorisation, so the check is an equality rather than a plausibility argument.
-- Report that propagation was confirmed by recomputing a node's layer-1 embedding by hand from its neighbours.
 - Report that parameter counts match the architectures exactly, confirming LightGCN carries no weights above its embedding tables.
-- Explain the zero-initialised feature projection and why it makes the metadata ablation a strict nesting.
+- Explain the zero-initialised feature projection and why it makes the metadata ablation a strict nesting rather than a comparison of two different models.
 
 ### Reproduction Protocol
 
 - State what constitutes a successful reproduction: matching published figures on the authors' own released split, using their configuration, across multiple seeds.
 - Explain why Gowalla was chosen: the authors released the exact train/test files, so the split is not a source of disagreement.
 - Note the protocol asymmetry. The released data has no validation set and the paper selects the best epoch on test; this notebook follows that protocol and states it explicitly, while all Amazon experiments use a proper validation split.
-- Record the hyperparameter mapping: published λ = 1e-4 corresponds to 5e-5 here because the reference implementation carries a factor of ½ in the regularisation term.
+- Record the two configuration details a reader would need to reproduce this: the published lambda of 1e-4 corresponds to 5e-5 here, because the reference implementation carries a factor of one half in the regularisation term; and the batch size is 2048 rather than the paper's 1024 on Gowalla, which the result reproduces to within 0.25% regardless.
 
-### Results
+### LightGCN Reproduction
 
 - Present the three-seed reproduction against published values.
 - Present the sampler comparison and the training-curve figure, noting that the two curves are identical until roughly epoch 180 before diverging systematically.
-- Note that the loss curves are not directly comparable across samplers, since each is averaged over a different sampling distribution.
+- Note that the loss curves are not directly comparable across samplers, since each is averaged over a different sampling distribution; only the Recall@20 curves compare like with like.
+
+### NGCF Reproduction
+
+- Explain why NGCF required the same external verification as LightGCN: the Amazon results contain a negative claim about a published method, and such a claim is only as strong as the implementation behind it.
+- Report reproduction to within 2.2% on Recall@20 using the same graph, evaluator and training loop as the LightGCN reproduction, so any difference between the two is attributable to the model rather than the pipeline.
+- State the metric asymmetry honestly: recall reproduces closely, NDCG less so, most plausibly because this implementation uses a single message dropout where NGCF uses both message and node dropout.
+- Note that both figures are lower bounds, since the selected regularisation sat at the top of the searched range and the run had not converged at the epoch limit.
 
 ### Discussion
 
 - Discuss what the sampler result implies for reproducibility in this literature: an implementation detail absent from the paper was worth more than the architectural change the paper argues for.
 - Explain why user-uniform sampling suits a per-user-averaged metric, and why the justification is fidelity and consistency rather than performance.
 - Discuss the residual 0.25% on recall and the contribution of maximum-over-evaluations reporting.
+- Draw the conclusion the NGCF reproduction enables: the same implementation reaches 98% of published recall on Gowalla and loses to matrix factorisation on Amazon Electronics, so the difference is attributable to the data regime rather than the code.
+- State the limitation that GraphSAGE cannot be verified this way. It is not a standard collaborative filtering baseline with published figures on these datasets, and its output normalisation was disabled after testing. It is an adaptation rather than a reproduction and should be described as such throughout.
 - Note that a seed standard deviation of 4e-5 means differences between models in the following chapter are easily resolvable.
 - Caution that Gowalla users hold roughly 27 interactions against 7 here, so the benefit of propagation should not be assumed to transfer.
 
@@ -574,13 +583,18 @@ Mention:
 - 29,858 users, 40,981 items, 1,027,370 interactions, density 0.00084
 - train 810,128 / test 217,242; median 4 test items per user
 
-**Reproduction, 3 layers, dimension 64, 1000 epochs, 3 seeds:**
-- recall@20 0.18184 ± 0.00004 (published 0.1823, −0.25%)
+**LightGCN reproduction - 3 layers, dimension 64, batch 2048, 1000 epochs, 3 seeds:**
+- Recall@20 0.18184 ± 0.00004 (published 0.1823, −0.25%)
 - NDCG@20 0.15542 ± 0.00041 (published 0.1555, within seed variance)
 
+**NGCF reproduction - 3 layers, dimension 64, batch 1024, 400 epochs, 1 seed:**
+- Recall@20 0.15349 (published 0.1569, −2.2%)
+- NDCG@20 0.12224 (published 0.1327, −7.9%)
+- selected regularisation 1e-3; at 1e-5 the model peaks at epoch 25 (Recall@20 0.12847) and then overfits
+
 **Sampling scheme, seed 42:**
-- interaction-uniform: recall@20 0.1738, NDCG@20 0.1482 (−4.6%, −4.7%)
-- user-uniform: recall@20 0.1819, NDCG@20 0.1551 (−0.22%, −0.26%)
+- interaction-uniform: Recall@20 0.1738, NDCG@20 0.1482 (−4.6%, −4.7%)
+- user-uniform: Recall@20 0.1819, NDCG@20 0.1551 (−0.22%, −0.26%)
 - sampler effect 4.7% against 3.9% for one layer to three in the paper's Table 3
 
 **Implementation checks:**
@@ -591,22 +605,79 @@ Mention:
 
 **Performance:**
 - CSR adjacency halved epoch time: 7.46s → 3.77s
-- 63 minutes per 1000-epoch Gowalla run on an RTX 5070 Ti Laptop GPU
+- 63 minutes per 1000-epoch LightGCN run; NGCF roughly 15s per epoch against LightGCN's 3.8s on the same graph
+- RTX 5070 Ti Laptop GPU
 
+# Notebook 10 - Collaborative Comparison
 
-### NGCF Reproduction
+### Experimental Design
 
-- Explain why NGCF required the same external verification as LightGCN: the Amazon results contain a negative claim about a published method, and such a claim is only as strong as the implementation.
-- Report reproduction to within 2.2% on recall@20 using the same graph, evaluator and training loop as the LightGCN reproduction.
-- State the metric asymmetry honestly: recall reproduces closely, NDCG less so, most plausibly because this implementation uses a single message dropout where NGCF uses both message and node dropout.
-- Note that both figures are lower bounds, since the selected regularisation sat at the top of the searched range and the run had not converged at the epoch limit.
-- Draw the conclusion that matters: the same implementation reaches 98% of published recall on Gowalla and loses to matrix factorisation on Amazon Electronics, so the difference is attributable to the data rather than the code.
-- State the limitation that GraphSAGE cannot be verified this way. It is not a standard collaborative filtering baseline with published figures on these datasets, and its output normalisation was disabled after testing. It is therefore an adaptation rather than a reproduction, and should be described as such throughout.
+- State the controlled comparison explicitly: LightGCN, NGCF and GraphSAGE differ from the BPR-MF baseline in one respect only, how embeddings are propagated. Same loss, sampler, optimiser, dimension, evaluator and splits throughout.
+- Explain that BPR-MF is not merely a baseline but the depth-0 member of the same family, verified exactly in Notebook 09, which is what makes the propagation-depth curve meaningful.
+- Note that Notebook 10 supersedes Notebook 08's single-seed BPR-MF figure, since all four models are treated identically here.
 
-### Key Quantitative Values (NGCF reproduction)
+### Tuning Methodology
 
-- Gowalla, 3 layers, embedding size 64, 400 epochs, user-uniform sampling
-- recall@20 0.15349 (published 0.1569, −2.2%)
-- NDCG@20 0.12224 (published 0.1327, −7.9%)
-- selected regularisation 1e-3; at 1e-5 the model peaks at epoch 25 (recall@20 0.12847) and then overfits
-- cost: ~15s per epoch against LightGCN's 3.8s on the same graph
+- Describe coordinate descent and justify it against a full joint grid on cost grounds, stating the interaction it cannot capture as a limitation.
+- Explain why hyperparameters were tuned separately for each protocol rather than transferred, referring back to Notebook 08 where the two protocols selected different regularisation for the same model.
+- Report that graph models require regularisation one to two orders of magnitude weaker than matrix factorisation, and explain the mechanism: propagation is itself a regulariser, and the loss gradient reaching a layer-0 embedding is diluted through the propagation layers while the L2 penalty applies directly.
+- Present the fixed-epoch-budget trap as a methodological finding: comparing hyperparameters at a fixed budget confounds regularisation strength with convergence speed, because stronger regularisation converges more slowly but reaches higher.
+- Present the checkpoint-granularity finding for the same reason, and state plainly that correcting it moved the headline result against the hypothesis being tested.
+- Justify the uniform 300-epoch budget from the convergence probe, and state the limitation that several timestamp configurations had not converged at that limit - equally, for every model.
+
+### Implementation Issues
+
+- Report that GraphSAGE could not train in its published form, and give the structural reason rather than treating it as a tuning failure: ReLU on the final layer plus L2 normalisation bounds every score to [0, 1], capping the margin BPR can open.
+- Report that removing the final nonlinearity made GraphSAGE worse, and present this as measured counter-evidence to LightGCN's claim that nonlinear activation harms collaborative filtering.
+- State that GraphSAGE is therefore an adaptation rather than a reproduction, and that this asymmetry with LightGCN and NGCF is acknowledged rather than hidden.
+
+### Results
+
+- Present the full comparison across both protocols, including Popularity and ItemKNN from Notebook 08 for context.
+- Report the propagation depth curve with regularisation tuned at each depth, and show the fixed-regularisation curve alongside it to demonstrate why the joint sweep was necessary.
+- Present the convergence figure, noting that it is measured on validation rather than test.
+- Report that the metric ordering is identical under NDCG@10, HitRate@10 and Recall@20, so no conclusion depends on the metric.
+
+### Discussion
+
+- Lead with the protocol dependence: whether graph convolution helps on this data depends on which evaluation protocol is used, and the two protocols give opposite answers. Connect this to Ji et al. (2023) and to the Notebook 08 baseline reversal, which this extends to the graph models.
+- Discuss why LightGCN loses to ItemKNN under the favourable protocol, and what that implies about the strength of the baselines the GNN literature typically reports against.
+- Explain the saturation of propagation depth in terms of sparsity: with about seven interactions per user there is little informative signal two or three hops away.
+- Argue that NGCF and GraphSAGE underperforming matrix factorisation supports LightGCN's case about unnecessary machinery, and note that this claim is credible here only because the same NGCF implementation reproduces its published result to within 2.2%.
+- Discuss the seed variance difference between LightGCN and BPR-MF, and whether propagation should be understood as stabilising the solution as well as improving it.
+- Acknowledge the limitations: single-seed tuning, coordinate descent rather than joint search, no depth sweep for NGCF or GraphSAGE under the timestamp protocol, and unconverged timestamp configurations.
+
+### Key Quantitative Values
+
+- 50 tuning runs, 28 final runs (three graph models across three seeds, BPR-MF across five, both protocols)
+- Fixed budget 300 epochs, dimension 32, Adam 1e-3, batch 8192, user-uniform sampling
+- Tuning on a 10,000-user validation subset; reported results on the full 50,000 evaluation users
+
+**Selected configurations (layers, L2):**
+- leave-last-out: LightGCN (3, 3e-3), NGCF (3, 1e-2), GraphSAGE (3, 3e-3), BPR-MF (0, 0.10)
+- timestamp: LightGCN (3, 3e-4), NGCF (3, 1e-2), GraphSAGE (3, 3e-4), BPR-MF (0, 0.15)
+
+**Test NDCG@10, leave-last-out:**
+- ItemKNN 0.00948 > LightGCN 0.00812 ± 0.00007 > Popularity 0.00752 > BPR-MF 0.00641 ± 0.00069 > NGCF 0.00425 ± 0.00013 = GraphSAGE 0.00425 ± 0.00020
+- LightGCN over BPR-MF: +27%
+
+**Test NDCG@10, timestamp:**
+- BPR-MF 0.00465 ± 0.00040 > ItemKNN 0.00217 > LightGCN 0.00158 ± 0.00020 > NGCF 0.00150 ± 0.00010 > GraphSAGE 0.00134 ± 0.00014 > Popularity 0.00124
+- BPR-MF over LightGCN: 2.9x
+
+**Propagation depth (validation NDCG@10, leave-last-out, regularisation tuned per depth):**
+- 0 layers (BPR-MF) 0.00953, 1 layer 0.012128, 2 layers 0.012128, 3 layers 0.012740, 4 layers 0.012308
+- gains over BPR-MF: +27.3%, +27.3%, +33.7%, +29.2%
+- fixed-regularisation sweep understates 1 layer by 11.6%
+
+**GraphSAGE output normalisation:**
+- validation NDCG@10 0.000976 with normalisation, 0.006032 without (6x)
+- removing the final ReLU: 0.004750 against 0.006393 (-26%)
+
+**Optimal regularisation by depth (LightGCN, leave-last-out):** 1e-2, 3e-3, 3e-3, 1e-3 for 1 to 4 layers
+
+**Seed variance:** LightGCN 0.9% of mean, BPR-MF 14%
+
+**Checkpoint granularity:** evaluating BPR-MF every 10 epochs rather than every 2 cost 30% on test and would have overstated LightGCN's advantage as 67% rather than 27%
+
+**Cost per epoch:** LightGCN 7.07s, NGCF 11.42s, GraphSAGE 6.87s

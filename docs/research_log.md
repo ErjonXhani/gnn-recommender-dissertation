@@ -333,94 +333,63 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - All 28 checks passed.
 
 
-## 1 August 2026 – Notebook 10: Tuning Setup and LightGCN on Leave-Last-Out
+## 1–4 August 2026 – Notebook 10: Tuning, Comparison, and NGCF Reproduction
 
 ### Completed
 
-- Started `10_collaborative_comparison.ipynb`: configuration, per-protocol graphs and adjacencies, and the three evaluators (test, validation, and a 10,000-user tuning subset).
-- Built a caching tuning harness that writes each run's history to `results/10_tuning/` and skips configurations already completed, so an interrupted session loses only the run in progress.
-- Established the epoch budget from a 500-epoch convergence probe.
-- Tuned LightGCN on the leave-last-out protocol over a joint depth × regularisation grid.
+- Built `10_hyperparameter_tuning.ipynb`: configuration, per-protocol graphs and adjacencies, and three evaluators (test, validation, and a 10,000-user tuning subset).
+- Built a caching tuning harness that writes each run's history to `results/10_tuning/` and skips configurations already completed, so an interrupted session loses only the run in progress. 50 tuning runs in total.
+- Tuned LightGCN, NGCF and GraphSAGE on both protocols, and diagnosed why GraphSAGE could not train at all in its published form.
+- Added a `final_activation` switch to `GraphSAGE` and tested whether the output nonlinearity helps or hurts.
+- Added Section 6 to `09_models_and_verification.ipynb`: an external check of the NGCF implementation against published Gowalla results.
+- Ran the final comparison: 28 runs across four models, two protocols and multiple seeds, with per-user scores saved for the significance tests in Notebook 12.
+- Diagnosed and corrected a checkpoint-selection problem that was understating BPR-MF by roughly 30%.
 
 ### Design Decisions
 
 - Built a separate graph per protocol from that protocol's training set, and asserted that no validation or test interaction appears as an edge. Propagation over held-out edges would leak the answer without changing anything visible in the metrics.
 - Stored both adjacencies in CSR format, which halved epoch time relative to COO at identical arithmetic.
 - Fixed the epoch budget at 300 for every configuration. A uniform budget matters more than the exact value, since models converge at different rates and per-model budgets would confound convergence speed with model quality.
-- Kept the learning rate at 1e-3. Tested 3e-3, which converged only about 1.5 times faster and produced a visibly noisier validation curve; not worth introducing a difference from the BPR-MF baseline.
-- Used a 10,000-user validation subset for the grid search, with the full evaluation set reserved for reported results.
-- Tuned depth and regularisation jointly rather than sequentially, after finding that they interact.
+- Kept the learning rate at 1e-3. Tested 3e-3, which converged only about 1.5 times faster and gave a visibly noisier validation curve; not worth introducing a difference from the BPR-MF baseline.
+- Used a 10,000-user validation subset for the grid search, reserving the full evaluation set for reported results.
+- Tuned each model by coordinate descent, except LightGCN where depth and regularisation were searched jointly after they proved to interact.
 - Used BPR-MF at its own tuned regularisation as the depth-0 anchor, rather than LightGCN with zero layers at the graph model's regularisation, which would have been a straw man.
-- Keyed the cache on model, protocol, depth, regularisation, epoch budget and seed, so runs at different budgets cannot silently share a file.
-
-### Key Findings
-
-- **Graph models need far weaker regularisation than matrix factorisation.** LightGCN's optimum is 3e-3 against BPR-MF's 0.10, roughly thirty times smaller. Propagation averages each embedding with its neighbours and is itself a regulariser, and the loss gradient reaching a layer-0 embedding is diluted through the propagation layers while the L2 penalty applies directly.
-- **Comparing hyperparameters at a fixed epoch budget confounds regularisation strength with convergence speed.** Stronger regularisation converges more slowly but reaches higher: at 150 epochs the surface appeared flat, but at 300 epochs 3e-4 peaked at epoch 120 and then declined, while 1e-3 was still improving at epoch 230.
-- **Depth and regularisation interact, and optimal regularisation falls monotonically with depth**: 1e-2, 3e-3, 3e-3, 1e-3 for one to four layers. Deeper models receive more smoothing from propagation and need less explicit shrinkage.
-- **Most of the benefit of propagation comes from the first hop.** With regularisation tuned separately at each depth, one layer gives +27.3% over BPR-MF, three layers +33.7%, and four layers falls back to +29.2%. A fixed-regularisation sweep understated the one-layer result by 11.6% and made depth appear far more important than it is.
-- Selected configuration for LightGCN under leave-last-out: 3 layers, regularisation 3e-3, validation NDCG@10 0.012740 against BPR-MF's 0.00953.
-- A 500-epoch convergence probe showed no reliable improvement past epoch 300. The apparent peak at epoch 500 was the maximum of twenty-one noisy evaluations on a flat plateau, roughly two standard deviations above the plateau mean - the same maximisation bias identified in LightGCN's published Gowalla figure.
-- Measured cost per epoch on this data: LightGCN 7.07s, NGCF 11.42s, GraphSAGE 6.87s. Sparse propagation is far more expensive here than arithmetic alone predicts, because the graph averages 10 neighbours per node against Gowalla's 23 and short rows multiply per-row overhead.
-
-
-## 2 August 2026 – NGCF Reproduction on Gowalla
-
-### Completed
-
-- Added Section 5 to `09_models_and_verification.ipynb`: an external check of the NGCF implementation against published Gowalla results, using the same graph, evaluator, sampler and training loop as the LightGCN reproduction.
-- Searched regularisation over 1e-5, 1e-4 and 1e-3 at the paper's embedding size of 64 and 3 propagation layers.
-
-### Design Decisions
-
-- Verified NGCF before reporting anything about it, because the results on the Amazon data include a negative claim - that NGCF underperforms matrix factorisation - and a negative claim about a published method is only as strong as the implementation behind it.
-- Used embedding size 64 and 3 layers to match the published configuration. Regularisation was searched rather than assumed, since the comparison table does not state it.
-- Reused the Gowalla split, graph and evaluator built for the LightGCN reproduction, so any difference between the two models is attributable to the model rather than the pipeline.
-
-### Key Findings
-
-- **NGCF reproduces.** Best result recall@20 0.15349 and NDCG@20 0.12224, against published values of 0.1569 and 0.1327: 2.2% and 7.9% below.
-- Both figures are lower bounds. Regularisation 1e-3 was the highest value tested and the run was still improving at epoch 400, so the true reproduction is likely closer.
-- Recall reproduces more closely than NDCG, unlike LightGCN where both metrics were off by the same 0.25%. Retrieving approximately the right items but ordering them slightly worse points to a small residual difference, most plausibly dropout: this implementation applies a single message dropout at 0.1 where NGCF uses both message and node dropout.
-- At regularisation 1e-5 the model peaks at epoch 25 with recall@20 0.12847 and then declines while training loss keeps falling, which is straightforward overfitting at that setting.
-- **The consequence for the dissertation is that the same NGCF implementation reaches 98% of published recall on Gowalla and loses to matrix factorisation on Amazon Electronics.** The failure therefore belongs to the data regime, not to the code.
-- NGCF is considerably more expensive than LightGCN on the same graph: roughly 15s per epoch on Gowalla at dimension 64 against LightGCN's 3.8s, owing to two weight matrices and an elementwise interaction term per layer.
-
-### Next Steps
-
-- Tune all three models under the timestamp protocol, starting with a single LightGCN probe before committing to the full sweep.
-- Note in the methodology that LightGCN and NGCF are verified reproductions while GraphSAGE is an adaptation, since it has no published collaborative filtering benchmark and its output normalisation was disabled.
-
-
-## 2 August 2026 – Notebook 10: NGCF and GraphSAGE on Leave-Last-Out
-
-### Completed
-
-- Tuned NGCF and GraphSAGE on the leave-last-out protocol: regularisation at the model's default depth, then depth at the selected regularisation.
-- Diagnosed why GraphSAGE was failing to train and fixed it.
-- Added a `final_activation` switch to `GraphSAGE` and tested whether the output nonlinearity helps or hurts.
-- Extended the cache key to include keyword overrides, so architectural variants cannot share a file with the default configuration.
-
-### Design Decisions
-
-- Tuned each model by coordinate descent rather than a full grid: regularisation at the default depth, then depth, then regularisation re-checked at the selected depth. A full joint grid for three models across two protocols is not affordable at roughly 300 epochs per run, and the interaction is weaker than the main effects.
-- Re-checked GraphSAGE's regularisation at the depth its sweep selected, since its two coordinates initially disagreed. NGCF needed no such check because both sweeps agreed on 3 layers.
 - Kept `normalise_output` and `final_activation` defaulting to the paper's behaviour in `models.py`, passing the chosen values explicitly at the call site so the deviation is visible in the notebook rather than buried in a class default.
 - Stopped tuning GraphSAGE once the variation within a single run exceeded the differences between configurations. Further search would have been fitting noise.
+- Re-tuned under the timestamp protocol rather than transferring the leave-last-out settings, since Notebook 08 had already shown the two protocols select different regularisation for the same model.
+- Scaled checkpoint granularity to each model's convergence timescale: BPR-MF peaks around epoch 20 and is evaluated every 2 epochs, the graph models peak past 250 and are evaluated every 10. Patience is held equal in epochs at 100, so all four models receive the same tolerance.
+- Ran BPR-MF with five seeds against the graph models' three, because its seed variance is an order of magnitude larger and it carries the comparison the chapter rests on.
+- Verified NGCF against published results before reporting anything about it, because the Amazon results contain a negative claim about a published method, and such a claim is only as strong as the implementation behind it.
+- Keyed the cache on model, protocol, depth, regularisation, epoch budget, seed and any architectural overrides, so runs at different settings cannot silently share a file.
 
-### Key Findings
+### Key Findings: tuning methodology
 
-- **GraphSAGE could not train at all in its published form.** Training loss moved only from 0.558 to 0.447 over 300 epochs, against LightGCN's 0.682 to 0.051. The cause is structural: ReLU on the final layer confines embeddings to the non-negative orthant and L2 normalisation projects them onto the unit sphere, so every score is a cosine similarity bounded in [0, 1] and BPR cannot open a margin wider than 1. Disabling the output normalisation raised validation NDCG@10 from 0.000976 to 0.006032, a sixfold improvement.
+- **Graph models need far weaker regularisation than matrix factorisation.** LightGCN's optimum is 3e-3 against BPR-MF's 0.10. Propagation averages each embedding with its neighbours and is itself a regulariser, and the loss gradient reaching a layer-0 embedding is diluted through the propagation layers while the L2 penalty applies directly. The first grid, inherited from BPR-MF's range, sat entirely in a region where the graph models cannot train.
+- **Comparing hyperparameters at a fixed epoch budget confounds regularisation strength with convergence speed.** Stronger regularisation converges more slowly but reaches higher: at 150 epochs the surface appeared flat, but at 300 epochs 3e-4 peaked at epoch 120 and then declined while 1e-3 was still improving at epoch 230.
+- **Depth and regularisation interact, and optimal regularisation falls monotonically with depth**: 1e-2, 3e-3, 3e-3, 1e-3 for one to four layers. Deeper models receive more smoothing from propagation and need less explicit shrinkage.
+- **Checkpoint granularity has to be scaled to a model's convergence timescale.** Evaluating BPR-MF every 10 epochs instead of every 2 selected a checkpoint around epoch 70 that scored marginally higher on validation and 30% worse on test. Correcting it reduced LightGCN's leave-last-out advantage from 67% to 27% and widened BPR-MF's timestamp lead; both corrections moved against the hypothesis being tested.
+- A 500-epoch probe showed no reliable improvement past epoch 300. The apparent peak at 500 was the maximum of twenty-one noisy evaluations on a flat plateau, about two standard deviations above the plateau mean - the same maximisation bias identified in LightGCN's published Gowalla figure.
+- Cost per epoch on this data: LightGCN 7.07s, NGCF 11.42s, GraphSAGE 6.87s. Sparse propagation is far more expensive here than arithmetic alone predicts, because the graph averages 10 neighbours per node against Gowalla's 23 and short rows multiply per-row overhead.
+
+### Key Findings: model behaviour
+
+- **GraphSAGE could not train in its published form.** Training loss moved only from 0.558 to 0.447 over 300 epochs, against LightGCN's 0.682 to 0.051. The cause is structural: ReLU on the final layer confines embeddings to the non-negative orthant and L2 normalisation projects them onto the unit sphere, so every score is a cosine similarity bounded in [0, 1] and BPR cannot open a margin wider than 1. Disabling the output normalisation raised validation NDCG@10 from 0.000976 to 0.006032, a sixfold improvement.
 - **Removing the final nonlinearity made GraphSAGE worse, not better** - 0.004750 against 0.006393 at the same regularisation, a 26% loss. This is mild counter-evidence to LightGCN's claim that nonlinear activation is harmful in collaborative filtering: the claim does not generalise across architectures.
+- GraphSAGE overfits rather than underfits. Its final training loss (0.031) is lower than LightGCN's (0.051) while its validation score is 40% worse, and it peaks around epoch 30 before declining - the opposite failure mode to the one LightGCN's authors report for NGCF. Its validation curve is also noisy enough that selection is unreliable: within one run the score swings between 0.0051 and 0.0078, a band as wide as the entire spread across its three regularisation values.
+- **Most of the benefit of propagation comes from the first hop.** With regularisation tuned separately at each depth, one layer gives +27.3% over BPR-MF, three give +33.7%, and four fall back to +29.2%. A fixed-regularisation sweep understated the one-layer result by 11.6% and made depth appear far more important than it is.
 - **All three models peak at three propagation layers**, independently and on very different absolute scales.
-- GraphSAGE overfits rather than underfits. Its final training loss (0.031) is lower than LightGCN's (0.051) while its validation score is 40% worse, and it peaks around epoch 30 before declining. This is the opposite failure mode to the one LightGCN's authors report for NGCF, which fits the training data less well.
-- GraphSAGE's validation curve is noisy enough that selection is unreliable: within one run the score swings between 0.0051 and 0.0078, a band as wide as the entire spread across its three regularisation values.
-- **Selected configurations and validation NDCG@10 under leave-last-out:** LightGCN 0.012740 (3 layers, reg 3e-3), BPR-MF 0.009530, NGCF 0.007964 (3 layers, reg 1e-2), GraphSAGE 0.007793 (3 layers, reg 3e-3, output normalisation disabled).
-- **Both graph models other than LightGCN underperform matrix factorisation.** This is stronger than the result LightGCN's authors report, where NGCF beats matrix factorisation on Gowalla. The difference is plausibly sparsity: users here hold about 7 interactions against Gowalla's 27, leaving less signal to justify the additional parameters.
-- The ranking is not an artefact of the fixed epoch budget. Several configurations of NGCF and GraphSAGE did hit the 300-epoch ceiling, but the selected configuration of each converged inside it - NGCF peaking at epoch 230 and GraphSAGE at epoch 30.
+- **NGCF reproduces on Gowalla**: recall@20 0.15349 and NDCG@20 0.12224 against published 0.1569 and 0.1327, using the same graph, evaluator and training loop as the LightGCN reproduction. Both figures are lower bounds, since the selected regularisation sat at the top of the searched range and the run was still improving at epoch 400.
+- Recall reproduces more closely than NDCG for NGCF (2.2% against 7.9%), unlike LightGCN where both metrics were off by the same 0.25%. Retrieving approximately the right items but ordering them slightly worse points to a small residual difference, most plausibly dropout: this implementation applies a single message dropout at 0.1 where NGCF uses both message and node dropout.
+- NGCF is considerably more expensive than LightGCN on the same graph - roughly 15s per epoch on Gowalla at dimension 64 against LightGCN's 3.8s - owing to two weight matrices and an elementwise interaction term per layer.
 
-### Next Steps
+### Key Findings: results
 
-- Verify the NGCF implementation against published Gowalla results before reporting the negative claim.
-- Tune all three models under the timestamp protocol.
-- Final runs across five seeds, then significance testing in Notebook 12.
+- Selected configurations, with validation NDCG@10 under leave-last-out: LightGCN 0.012740 (3 layers, reg 3e-3), BPR-MF 0.009530, NGCF 0.007964 (3 layers, reg 1e-2), GraphSAGE 0.007793 (3 layers, reg 3e-3, output normalisation disabled).
+- **Under leave-last-out, LightGCN improves on matrix factorisation by 27%** on test: NDCG@10 0.00812 ± 0.00007 against 0.00641 ± 0.00069, with no overlap between the ranges. NGCF and GraphSAGE both fall below the baseline at 0.00425.
+- **LightGCN does not beat ItemKNN** (0.00948), so the strongest method under this protocol is item-item neighbourhood collaborative filtering rather than any graph neural network.
+- **The ranking reverses completely under the timestamp protocol.** BPR-MF reaches 0.00465 ± 0.00040 against LightGCN's 0.00158 ± 0.00020, a factor of 2.9. Every graph model also falls below ItemKNN, and LightGCN barely exceeds Popularity.
+- The reversal is not an artefact of the test population. It is already visible on validation, where all models are scored on identical users: BPR-MF 0.0089 against LightGCN 0.0049. Validation-to-test ratios are roughly uniform within a protocol - 1.5 to 1.7 under leave-last-out, 2.0 to 3.1 under timestamp - so the larger drop under the temporal split reflects a harder and differently constituted evaluation population rather than model-specific failure.
+- **Both graph models other than LightGCN underperform matrix factorisation on both protocols.** This is stronger than the result LightGCN's authors report, where NGCF beats matrix factorisation on Gowalla. The same NGCF implementation reaches 98% of published recall there and loses here, so the failure belongs to the data regime rather than the code - plausibly sparsity, since users here hold about 7 interactions against Gowalla's 27.
+- The ranking is not an artefact of the epoch budget. Several configurations of NGCF and GraphSAGE hit the 300-epoch ceiling, but the selected configuration of each converged inside it, NGCF peaking at epoch 230 and GraphSAGE at epoch 30.
+- Seed variance differs sharply by model: LightGCN 0.9% of its mean against BPR-MF's 14%. Graph propagation appears to stabilise the solution as well as improve it under leave-last-out.
+- The ordering is identical under NDCG@10, HitRate@10 and Recall@20, so no conclusion depends on the choice of metric.
