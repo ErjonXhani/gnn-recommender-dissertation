@@ -386,10 +386,50 @@ The validation demonstrates that my independently implemented preprocessing pipe
 
 - Selected configurations, with validation NDCG@10 under leave-last-out: LightGCN 0.012740 (3 layers, reg 3e-3), BPR-MF 0.009530, NGCF 0.007964 (3 layers, reg 1e-2), GraphSAGE 0.007793 (3 layers, reg 3e-3, output normalisation disabled).
 - **Under leave-last-out, LightGCN improves on matrix factorisation by 27%** on test: NDCG@10 0.00812 ± 0.00007 against 0.00641 ± 0.00069, with no overlap between the ranges. NGCF and GraphSAGE both fall below the baseline at 0.00425.
-- **LightGCN does not beat ItemKNN** (0.00948), so the strongest method under this protocol is item-item neighbourhood collaborative filtering rather than any graph neural network.
+- **LightGCN does not beat ItemKNN** (0.00948), so the best-performing method under this protocol is item-item neighbourhood collaborative filtering rather than any graph neural network. This does not generalise: on Gowalla, ItemKNN comes last and LightGCN beats it by 26%.
 - **The ranking reverses completely under the timestamp protocol.** BPR-MF reaches 0.00465 ± 0.00040 against LightGCN's 0.00158 ± 0.00020, a factor of 2.9. Every graph model also falls below ItemKNN, and LightGCN barely exceeds Popularity.
 - The reversal is not an artefact of the test population. It is already visible on validation, where all models are scored on identical users: BPR-MF 0.0089 against LightGCN 0.0049. Validation-to-test ratios are roughly uniform within a protocol - 1.5 to 1.7 under leave-last-out, 2.0 to 3.1 under timestamp - so the larger drop under the temporal split reflects a harder and differently constituted evaluation population rather than model-specific failure.
-- **Both graph models other than LightGCN underperform matrix factorisation on both protocols.** This is stronger than the result LightGCN's authors report, where NGCF beats matrix factorisation on Gowalla. The same NGCF implementation reaches 98% of published recall there and loses here, so the failure belongs to the data regime rather than the code - plausibly sparsity, since users here hold about 7 interactions against Gowalla's 27.
+- **Both graph models other than LightGCN underperform matrix factorisation on both protocols.** This is stronger than the result LightGCN's authors report, where NGCF beats matrix factorisation on Gowalla. The same NGCF implementation reaches 98% of published recall there and loses here, so the failure belongs to the data regime rather than the code. The mechanism is examined separately below.
 - The ranking is not an artefact of the epoch budget. Several configurations of NGCF and GraphSAGE hit the 300-epoch ceiling, but the selected configuration of each converged inside it, NGCF peaking at epoch 230 and GraphSAGE at epoch 30.
 - Seed variance differs sharply by model: LightGCN 0.9% of its mean against BPR-MF's 14%. Graph propagation appears to stabilise the solution as well as improve it under leave-last-out.
 - The ordering is identical under NDCG@10, HitRate@10 and Recall@20, so no conclusion depends on the choice of metric.
+
+## 5 August 2026 – Matrix Factorisation on Gowalla: Density Reference and Baseline Audit
+
+### Completed
+
+- Added Section 7 to `09_models_and_verification.ipynb`: matrix factorisation trained on Gowalla using the same configuration, evaluator and protocol as the LightGCN and NGCF reproductions, with its own regularisation sweep.
+- Fact-checked every published figure used in Notebook 09 against the source papers.
+
+### Sources Verified
+
+- The Gowalla split originates with NGCF (Wang et al., SIGIR 2019, arXiv:1905.08108), not LightGCN, which reused the same files. NGCF Section 4.1: 10-core filtering, then 80% of each user's interactions sampled at random for training and the remainder for test, with 10% of training held out for validation. **The split is random, not temporal.**
+- Dataset statistics 29,858 users / 40,981 items / 1,027,370 interactions / density 0.00084 (NGCF Table 1, LightGCN Table 2) match the loaded files exactly.
+- Published figures: MF Recall@20 0.1291 and NDCG@20 0.1109 (NGCF Table 2); NGCF-3 0.1569 and 0.1327 (NGCF Tables 2 and 3); LightGCN-3 0.1823 and 0.1555 (He et al., Table 3).
+- NGCF describes its MF baseline as matrix factorisation optimised with the BPR loss, so it is directly comparable to the BPR-MF used throughout this project.
+
+### Design Decisions
+
+- Gave matrix factorisation its own regularisation sweep rather than inheriting LightGCN's. On the Amazon data its optimum was roughly five hundred times larger, so transferring the graph model's setting would have produced a straw man. The Gowalla optimum is 1e-3, an interior maximum.
+- Held everything else identical to the graph model runs - dimension 64, batch 2048, user-uniform sampling, 1000 epochs, best-epoch selection - so the only difference between arms is the model.
+
+### Key Findings
+
+- **Recall@20 on Gowalla: LightGCN 0.18184, BPR-MF 0.15515, NGCF 0.15349.** LightGCN beats matrix factorisation by 17.2%; NGCF is 1.1% below it.
+- **This contradicts the sparsity explanation previously offered for the Amazon results.** LightGCN's advantage over matrix factorisation is 17.2% on Gowalla, where users hold 27 training interactions, and 26.7% on Amazon Electronics under leave-last-out, where they hold 7. The advantage is larger on the sparser data, so density does not account for the collapse under the timestamp protocol.
+- **What separates the three cases is temporal structure in the evaluation.** Gowalla's split is random, with no temporal shift. Amazon leave-last-out orders each user's interactions but leaves the training graph containing activity that postdates many users' test items. The Amazon timestamp split has a genuine global gap and no leakage. LightGCN gains 17.2%, then 26.7%, then loses by a factor of 2.9. The working hypothesis is that graph propagation benefits disproportionately from temporal leakage: propagation aggregates a neighbourhood encoding what was co-consumed during the training window, and where that window overlaps the test period the neighbourhood carries information about the future it should not have.
+- **The properly tuned baseline beats the published one by 20%.** BPR-MF here reaches Recall@20 0.15515 against the 0.1291 reported for MF on the same files. Consequently NGCF's published figure of 0.1569 is only **1.1%** above this baseline, where its paper claims an 11.68% improvement over its own MF; and LightGCN's published 0.1823 is **17.5%** above it, rather than the 41% implied by the published MF number.
+- The gain over the published baseline comes from two sources already documented in this project: user-uniform sampling, worth about 4.7% on this dataset, and a regularisation sweep with an interior optimum at 1e-3.
+- This is the Rendle et al. and Ferrari Dacrema et al. critique of under-tuned baselines in recommender research, reproduced as a direct measurement on the benchmark's own data using code verified to reproduce both papers.
+
+- **ItemKNN comes last on Gowalla** at Recall@20 0.14396, below matrix factorisation (0.15515) and 26% below LightGCN (0.18184). On the Amazon data under leave-last-out it comes first. The ordering of methods is therefore almost completely different between the two datasets.
+- **This narrows the ItemKNN finding.** The claim is not that a neighbourhood method is generally competitive with graph models - on the GNN literature's own benchmark it is not. The claim is that on sparse e-commerce data under leave-last-out, a well-tuned ItemKNN outperforms every graph model tested.
+- **The methods that win under each protocol share a pattern.** ItemKNN and LightGCN both rely on co-occurrence structure, one explicitly and one through propagation, and both peak under the leaky leave-last-out protocol before falling under the leakage-free timestamp split. Matrix factorisation, which learns coarse latent factors under heavy regularisation, wins where there is a genuine temporal gap. This explains all three protocols with one mechanism and is not specific to graph models.
+- Two secondary confirmations: shrinkage 0 gives 0.11569 against 0.14396 at shrinkage 50, the same cosine bias towards rare items diagnosed on the Amazon data; and the optimal shrinkage is 50 here against 200 to 500 on Amazon, since denser data needs less correction.
+
+### Caveats
+
+- The leakage hypothesis remains a hypothesis. Dataset and protocol vary together across the three cases, and the clean test - Gowalla under a temporal split - is not possible with the released files.
+- The baseline comparison uses best-epoch selection over 1000 epochs, while NGCF used validation-based early stopping. That favours this implementation, though the same analysis on LightGCN put the estimator bias at roughly 0.2%, not 20%.
+- NGCF re-implemented the NDCG metric, so Recall@20 is the safer basis for comparison against its published table.
+- The Gowalla NGCF and MF results are single-seed. LightGCN is three seeds.

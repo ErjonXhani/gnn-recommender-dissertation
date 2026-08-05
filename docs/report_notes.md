@@ -550,7 +550,7 @@ Mention:
 ### Reproduction Protocol
 
 - State what constitutes a successful reproduction: matching published figures on the authors' own released split, using their configuration, across multiple seeds.
-- Explain why Gowalla was chosen: the authors released the exact train/test files, so the split is not a source of disagreement.
+- Explain why Gowalla was chosen: the exact train/test files are public, so the split is not a source of disagreement. Attribute them correctly - the split originates with NGCF (Wang et al., 2019), which LightGCN reused. NGCF applies 10-core filtering and then samples 80% of each user's interactions at random for training, so the split is random rather than temporal. This matters for how the results are compared against the Amazon experiments.
 - Note the protocol asymmetry. The released data has no validation set and the paper selects the best epoch on test; this notebook follows that protocol and states it explicitly, while all Amazon experiments use a proper validation split.
 - Record the two configuration details a reader would need to reproduce this: the published lambda of 1e-4 corresponds to 5e-5 here, because the reference implementation carries a factor of one half in the regularisation term; and the batch size is 2048 rather than the paper's 1024 on Gowalla, which the result reproduces to within 0.25% regardless.
 
@@ -567,6 +567,16 @@ Mention:
 - State the metric asymmetry honestly: recall reproduces closely, NDCG less so, most plausibly because this implementation uses a single message dropout where NGCF uses both message and node dropout.
 - Note that both figures are lower bounds, since the selected regularisation sat at the top of the searched range and the run had not converged at the epoch limit.
 
+### Baseline Audit and Density Reference
+
+- Explain why matrix factorisation was also trained on Gowalla: the Amazon results were being explained by appeal to data density, and that explanation is an inference unless the same models are compared on data of a different density using the same code.
+- Report that matrix factorisation was given its own regularisation sweep rather than inheriting LightGCN's, since on the Amazon data its optimum was several hundred times larger.
+- Report the density result and state plainly that it contradicts the sparsity explanation: LightGCN's advantage over matrix factorisation is smaller on the denser dataset, not larger. Redirect the explanation to temporal structure in the evaluation, and carry this into Notebook 10's discussion.
+- Report the baseline audit as a finding in its own right: a properly tuned BPR-MF exceeds the published MF baseline on the same files by 20%, which reduces NGCF's published advantage over matrix factorisation from 11.68% to 1.1%, and LightGCN's from 41% to 17.5%.
+- Attribute the gain to the two things already documented in this project - user-uniform sampling, worth about 4.7% here, and a regularisation sweep with an interior optimum - rather than to anything novel.
+- Connect this to Rendle et al. and Ferrari Dacrema et al. on under-tuned baselines in recommender research, and note that this is a direct measurement on the benchmark's own data using code verified to reproduce both papers, rather than a citation.
+- State the caveats: best-epoch selection here against validation-based early stopping in the original, so this implementation gets the more generous estimator; NGCF re-implemented NDCG, so Recall@20 is the safer basis for comparison; and the Gowalla NGCF and MF arms are single-seed.
+
 ### Discussion
 
 - Discuss what the sampler result implies for reproducibility in this literature: an implementation detail absent from the paper was worth more than the architectural change the paper argues for.
@@ -575,7 +585,7 @@ Mention:
 - Draw the conclusion the NGCF reproduction enables: the same implementation reaches 98% of published recall on Gowalla and loses to matrix factorisation on Amazon Electronics, so the difference is attributable to the data regime rather than the code.
 - State the limitation that GraphSAGE cannot be verified this way. It is not a standard collaborative filtering baseline with published figures on these datasets, and its output normalisation was disabled after testing. It is an adaptation rather than a reproduction and should be described as such throughout.
 - Note that a seed standard deviation of 4e-5 means differences between models in the following chapter are easily resolvable.
-- Caution that Gowalla users hold roughly 27 interactions against 7 here, so the benefit of propagation should not be assumed to transfer.
+
 
 ### Key Quantitative Values
 
@@ -607,6 +617,14 @@ Mention:
 - CSR adjacency halved epoch time: 7.46s → 3.77s
 - 63 minutes per 1000-epoch LightGCN run; NGCF roughly 15s per epoch against LightGCN's 3.8s on the same graph
 - RTX 5070 Ti Laptop GPU
+
+**Gowalla baseline audit and density reference - Recall@20, identical configuration across arms:**
+- BPR-MF (this project) 0.15515 at reg 1e-3; MF as published by NGCF 0.1291 (+20.2%)
+- NGCF 0.15349 here, 0.1569 published; LightGCN 0.18184 here, 0.1823 published
+- published NGCF over this baseline: +1.1% (its paper claims +11.68% over its own MF)
+- published LightGCN over this baseline: +17.5% (implied +41% against the published MF)
+- LightGCN over BPR-MF, both this project: +17.2%
+- Gowalla 27 training interactions per user against Amazon Electronics' 7
 
 # Notebook 10 - Collaborative Comparison
 
@@ -641,7 +659,10 @@ Mention:
 ### Discussion
 
 - Lead with the protocol dependence: whether graph convolution helps on this data depends on which evaluation protocol is used, and the two protocols give opposite answers. Connect this to Ji et al. (2023) and to the Notebook 08 baseline reversal, which this extends to the graph models.
+- Present the three-point pattern as the strongest form of the argument. LightGCN beats matrix factorisation by 17.2% on Gowalla (random split, no temporal shift), by 26.7% on Amazon under leave-last-out (training graph contains activity postdating many test items), and loses by a factor of 2.9 under the timestamp protocol (genuine temporal gap, no leakage). Density moves in the opposite direction to the effect, so the ordering is explained by temporal structure in the evaluation rather than by data sparsity.
+- Advance, as a hypothesis rather than a conclusion, that graph propagation benefits disproportionately from temporal leakage: propagation aggregates a neighbourhood that encodes what was co-consumed during the training window, and where that window overlaps the test period the neighbourhood carries information about the future it should not have. Note that the clean test - Gowalla under a temporal split - is not possible with the released files.
 - Discuss why LightGCN loses to ItemKNN under the favourable protocol, and what that implies about the strength of the baselines the GNN literature typically reports against.
+- Tie the ItemKNN result to the Gowalla baseline audit in Notebook 09. Both point the same way: LightGCN's advantage depends heavily on what it is measured against, losing to a well-tuned neighbourhood method on Amazon and shrinking from 41% to 17.5% on Gowalla once the matrix factorisation baseline is tuned with the same care.
 - Explain the saturation of propagation depth in terms of sparsity: with about seven interactions per user there is little informative signal two or three hops away.
 - Argue that NGCF and GraphSAGE underperforming matrix factorisation supports LightGCN's case about unnecessary machinery, and note that this claim is credible here only because the same NGCF implementation reproduces its published result to within 2.2%.
 - Discuss the seed variance difference between LightGCN and BPR-MF, and whether propagation should be understood as stabilising the solution as well as improving it.
