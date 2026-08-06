@@ -1,0 +1,1 @@
+{"model": "GraphSAGE", "encoder": "blair", "protocol": "last_out", "l2_reg": 0.0001, "seed": 42, "best_epoch": 10, "val_ndcg@10": 0.00899474136531353, "minutes": 17.529635127385458}

@@ -1,0 +1,1 @@
+{"model": "LightGCN", "encoder": "none", "protocol": "timestamp", "l2_reg": 0.0003, "seed": 42, "best_epoch": 260, "minutes": 34.97267416715622, "all_ndcg@10": 0.001788476831279695, "cold_ndcg@10": 0.0, "cold_hit_rate@10": 0.0}

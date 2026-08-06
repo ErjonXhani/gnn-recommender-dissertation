@@ -233,4 +233,4 @@ models/
 # Ignore Python cache
 __pycache__/
 
-results/*.pt
+*.pt

@@ -1,0 +1,165 @@
+{
+  "notebook": "11_metadata_and_cold_start",
+  "subset": "small",
+  "protocols": [
+    "last_out",
+    "timestamp"
+  ],
+  "seeds": [
+    42,
+    1,
+    2
+  ],
+  "encoders": [
+    "blair",
+    "minilm",
+    "tfidf_svd"
+  ],
+  "training": {
+    "dim": 32,
+    "epochs": 300,
+    "batch_size": 8192,
+    "learning_rate": 0.001,
+    "sampling": "user"
+  },
+  "selected_regularisation": {
+    "LightGCN + features": {
+      "last_out": 0.0001,
+      "timestamp": 3e-05
+    },
+    "LightGCN, no features": {
+      "last_out": 0.003,
+      "timestamp": 0.0003
+    },
+    "BPR-MF": {
+      "last_out": 0.1,
+      "timestamp": 0.15
+    },
+    "GraphSAGE + features": {
+      "last_out": 0.0001,
+      "timestamp": 0.0001
+    }
+  },
+  "cold_items": {
+    "last_out": {
+      "items": 425,
+      "users_affected": 338,
+      "share_of_eval_users": 0.0068
+    },
+    "timestamp": {
+      "items": 8353,
+      "users_affected": 22130,
+      "share_of_eval_users": 0.4426
+    }
+  },
+  "metadata_effect": [
+    {
+      "model": "LightGCN",
+      "protocol": "last_out",
+      "without": 0.008124100354810556,
+      "with BLaIR": 0.008635040683050951,
+      "change": 0.06289192721971348
+    },
+    {
+      "model": "LightGCN",
+      "protocol": "timestamp",
+      "without": 0.001575416885316372,
+      "with BLaIR": 0.0022984265039364495,
+      "change": 0.4589322517480092
+    },
+    {
+      "model": "BPR-MF",
+      "protocol": "last_out",
+      "without": 0.006300964703162511,
+      "with BLaIR": 0.005738496935615937,
+      "change": -0.08926692880286502
+    },
+    {
+      "model": "BPR-MF",
+      "protocol": "timestamp",
+      "without": 0.004537105094641447,
+      "with BLaIR": 0.004217520356178284,
+      "change": -0.07043802861005122
+    }
+  ],
+  "cold_start_restricted": [
+    {
+      "model": "GraphSAGE",
+      "encoder": "blair",
+      "ndcg@10": 0.0023187692277133465,
+      "hit_rate@10": 0.006868504453450441,
+      "recall@10": NaN,
+      "mrr@10": NaN,
+      "hit_rate@20": NaN,
+      "recall@20": NaN,
+      "ndcg@20": NaN,
+      "mrr@20": NaN,
+      "x random": 5.1
+    },
+    {
+      "model": "LightGCN",
+      "encoder": "blair",
+      "ndcg@10": 0.0011565863387659192,
+      "hit_rate@10": 0.004247627686709166,
+      "recall@10": NaN,
+      "mrr@10": NaN,
+      "hit_rate@20": NaN,
+      "recall@20": NaN,
+      "ndcg@20": NaN,
+      "mrr@20": NaN,
+      "x random": 2.5
+    },
+    {
+      "model": "LightGCN",
+      "encoder": "none",
+      "ndcg@10": 0.0008631154196336865,
+      "hit_rate@10": 0.002530501689761877,
+      "recall@10": NaN,
+      "mrr@10": NaN,
+      "hit_rate@20": NaN,
+      "recall@20": NaN,
+      "ndcg@20": NaN,
+      "mrr@20": NaN,
+      "x random": 1.9
+    },
+    {
+      "model": "BPR-MF",
+      "encoder": "none",
+      "ndcg@10": 0.000601353996898979,
+      "hit_rate@10": 0.002123813843354583,
+      "recall@10": NaN,
+      "mrr@10": NaN,
+      "hit_rate@20": NaN,
+      "recall@20": NaN,
+      "ndcg@20": NaN,
+      "mrr@20": NaN,
+      "x random": 1.3
+    },
+    {
+      "model": "BPR-MF",
+      "encoder": "blair",
+      "ndcg@10": 0.0005292198620736599,
+      "hit_rate@10": 0.002169001381844282,
+      "recall@10": NaN,
+      "mrr@10": NaN,
+      "hit_rate@20": NaN,
+      "recall@20": NaN,
+      "ndcg@20": NaN,
+      "mrr@20": NaN,
+      "x random": 1.2
+    },
+    {
+      "model": "random",
+      "encoder": "-",
+      "ndcg@10": 0.0004551882448140532,
+      "hit_rate@10": 0.0018075010739266872,
+      "recall@10": 0.0008784764213487506,
+      "mrr@10": 0.0004968476132489741,
+      "hit_rate@20": 0.004112064838409424,
+      "recall@20": 0.0020171392243355513,
+      "ndcg@20": 0.0007709061610512435,
+      "mrr@20": 0.0006460401928052306,
+      "x random": 1.0
+    }
+  ]
+}

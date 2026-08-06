@@ -1,0 +1,1 @@
+{"encoder": "blair", "protocol": "timestamp", "l2_reg": 0.3, "seed": 42, "best_epoch": 122, "val_ndcg@10": 0.00014883416588418186, "minutes": 9.171457529067993}

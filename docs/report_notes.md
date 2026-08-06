@@ -702,3 +702,75 @@ Mention:
 **Checkpoint granularity:** evaluating BPR-MF every 10 epochs rather than every 2 cost 30% on test and would have overstated LightGCN's advantage as 67% rather than 27%
 
 **Cost per epoch:** LightGCN 7.07s, NGCF 11.42s, GraphSAGE 6.87s
+
+# Notebook 11 - Metadata and Cold-Start Recommendation
+
+### Experimental Design
+
+- State the three questions the notebook answers: whether metadata improves recommendation, whether the choice of encoder matters, and whether metadata helps where there is no interaction history.
+- Explain why only LightGCN was carried forward, and why matrix factorisation was added as a control rather than as a competitor: the interesting question is not whether content helps, but whether it helps *because of* the graph.
+- Explain the zero-initialised feature projection and why it makes this a strict nesting. The two arms begin numerically identical, so the feature-free results from Notebook 10 can be reused directly and any difference is attributable to the metadata alone.
+- Note that matrix factorisation with features was implemented as LightGCN with zero propagation layers, reusing code verified in Notebook 09 rather than adding a second feature hook.
+- Justify giving each arm its own regularisation sweep, and quantify why it mattered: features moved LightGCN's optimum from 3e-3 to 1e-4, and inheriting the old value would have reported a 2% gain rather than 15%.
+
+### Metadata Effect
+
+- Present the four-way table: two models, two protocols, with and without features.
+- Emphasise that the matrix factorisation comparisons use identical regularisation in both arms, so the negative result is not a tuning artefact.
+- Report that the benefit to LightGCN is seven times larger under the timestamp protocol than under leave-last-out, and connect this to Notebook 10: features matter most where the collaborative signal is weakest.
+- State clearly that metadata does not overturn the Notebook 10 conclusion. Matrix factorisation still wins the leakage-free protocol with or without it.
+- Use the regularisation behaviour as supporting evidence for the mechanism: adding features moved LightGCN's optimum down thirtyfold, while matrix factorisation's optimum did not move, which is what you would expect if the projection is useful information in one case and unusable capacity in the other.
+
+### Encoder Comparison
+
+- Present this as a supporting result, appropriate for an appendix.
+- Report the three encoders and state that they are indistinguishable, reasoning from the seed variance measured for BLaIR rather than from seeds run for each encoder. State that this is the basis for the claim.
+- Draw the conclusion that matters: the benefit comes from having a text representation of the product at all, not from a sophisticated one. Domain-specific pre-training supplied with the dataset gave no measurable advantage over a general-purpose encoder or over TF-IDF with SVD.
+- Note the limitation that the three feature matrices have different spreads, and that the L2 penalty applies to the projected features, so identical regularisation is not identical shrinkage across encoders.
+
+### Cold-Start Evaluation
+
+- Report the cold-item counts for both protocols first, and treat the difference as a finding rather than a setup detail: leave-last-out affects 0.7% of evaluation users against 44.3% under the timestamp protocol. This is a second respect in which the standard protocol understates the real task.
+- Explain why the experiment was run under two framings, and that they answer different questions: whether a new product can appear in an unrestricted top-10 list, and whether new products can be ranked sensibly among themselves.
+- Report the open-ranking result as a negative finding with a mechanism: a cold item's embedding is never updated during training, so it stays near its random initialisation, and warm items crowd it out. Conclude that surfacing new products requires a deliberate mechanism, such as reserved slots or a restricted candidate pool, rather than better item representations.
+- Report the restricted-pool result as the positive finding, with the random baseline included so the small absolute values are interpretable.
+- Present the inversion as the headline: the weakest model overall is the strongest on cold items, by a factor of two. This is the property GraphSAGE was included to test and the only setting in the project where it wins.
+
+### Discussion
+
+- Argue that content and propagation are complementary. Propagation gives a feature-derived representation somewhere to go, smoothing it across the graph neighbourhood where it reinforces genuine co-purchase structure; without propagation the same projection is capacity the model overfits.
+- Discuss what the inversion implies for evaluation practice: aggregate metrics are dominated by warm items and conceal the behaviour that matters for new products. A system chosen on aggregate NDCG would select the model that performs worst where a retailer most needs help.
+- Connect the cold-start item counts back to the protocol argument in Notebook 10. Leave-last-out understates both temporal leakage and cold-start difficulty, and these are independent problems with the same protocol.
+- Note the validation-test divergence observed for matrix factorisation with features, and connect it to the checkpoint-selection problem in Notebook 10: under leave-last-out, validation is each user's second-to-last item and test is their last, so a weakly regularised model that memorises recent history scores well on one and badly on the other.
+- State the limitations: the encoder comparison is single-seed; GraphSAGE with features was tuned only on leave-last-out and used untuned under the timestamp protocol; NGCF was not given features; and no content-based ItemKNN was built, which is the natural baseline this project lacks.
+
+### Key Quantitative Values
+
+- Features: BLaIR 807 dimensions, MiniLM 423, TF-IDF+SVD 295, all centred, no item with an empty vector
+- Selected regularisation with features: LightGCN 1e-4 (leave-last-out) and 3e-5 (timestamp), against 3e-3 and 3e-4 without; matrix factorisation unchanged at 0.10 and 0.15
+
+**Metadata effect, test NDCG@10:**
+- LightGCN, leave-last-out: 0.00812 → 0.00864 (+6.3%)
+- LightGCN, timestamp: 0.00158 → 0.00230 (+45.9%)
+- BPR-MF, leave-last-out: 0.00641 → 0.00574 (−10.5%)
+- BPR-MF, timestamp: 0.00465 → 0.00422 (−9.2%)
+- GraphSAGE, leave-last-out: 0.00445 → 0.00537 (+20.7%, single seed)
+
+**Encoders, leave-last-out, seed 42, against 0.00811 without features:**
+- MiniLM 0.00873 (+7.7%), BLaIR 0.00872 (+7.6%), TF-IDF+SVD 0.00857 (+5.7%)
+- range across encoders ≈ 1.5 standard deviations of BLaIR's three-seed variance (0.00011)
+
+**Cold items:**
+- leave-last-out: 425 items, 1,817 test interactions, 338 users (0.7% of evaluation users)
+- timestamp: 8,353 items, 64,088 test interactions, 22,130 users (44.3%)
+
+**Cold-item ranking, timestamp, restricted candidate pool, NDCG@10:**
+- GraphSAGE + BLaIR 0.00232 (5.0× random)
+- LightGCN + BLaIR 0.00116 (2.5×)
+- LightGCN, no features 0.00086 (1.9×)
+- BPR-MF, no features 0.00060 (1.3×)
+- BPR-MF + BLaIR 0.00053 (1.2×)
+- random 0.00046
+- open ranking against the full catalogue: every model at or below chance
+
+**Verification:** retrained cold-start models reproduce Notebooks 10 and 11 to five decimal places, including the zero-layer identity for matrix factorisation

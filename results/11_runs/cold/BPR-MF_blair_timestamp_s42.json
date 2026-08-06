@@ -1,0 +1,1 @@
+{"model": "BPR-MF", "encoder": "blair", "protocol": "timestamp", "l2_reg": 0.15, "seed": 42, "best_epoch": 28, "minutes": 5.690802204608917, "all_ndcg@10": 0.0045676580630242825, "cold_ndcg@10": 2.6963034542859532e-05, "cold_hit_rate@10": 0.00018075011030305177}
