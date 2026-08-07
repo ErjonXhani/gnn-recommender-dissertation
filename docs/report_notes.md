@@ -774,3 +774,61 @@ Mention:
 - open ranking against the full catalogue: every model at or below chance
 
 **Verification:** retrained cold-start models reproduce Notebooks 10 and 11 to five decimal places, including the zero-layer identity for matrix factorisation
+
+
+# Notebook 12 - Significance, Scaling and Synthesis
+
+### Significance Testing
+
+- Explain why per-user scores were saved from the outset: comparing models on means alone cannot distinguish a broad small improvement from a narrow large one.
+- Justify the Wilcoxon signed-rank test over a paired t-test on the grounds that per-user NDCG is zero-inflated and non-normal, and justify pairing on the grounds that users differ enormously in predictability.
+- Explain why the tests use a single seed while the reported means use all available seeds, and state which way that biases the comparison.
+- Report the results, but lead with effect sizes rather than p-values, and explain why: with 50,000 paired users, statistical significance is close to guaranteed and carries little information.
+- Report that roughly 97% of users are tied in every comparison, and draw the consequence: all reported differences are decided by a small minority of users. This belongs in the results chapter, not a footnote.
+- Correct the Notebook 11 claim about metadata harming matrix factorisation: significant under leave-last-out, consistent in direction but not significant under timestamp.
+
+### Scaling
+
+- Present the cost measurement as a finding in its own right, not as setup for the accuracy comparison.
+- Report the fitted exponent and explain the mechanism: every batch propagates over the entire graph, and the number of batches grows with the data, so cost grows with the square of dataset size.
+- Report wall-clock ratios rather than per-epoch ratios, since LightGCN also needs more epochs and the per-epoch figure understates what a practitioner pays.
+- State the feasibility result plainly: matrix factorisation trains on 12.2 million interactions in 39 minutes, LightGCN would need roughly 25 hours, and this is why the accuracy comparison stops at the medium subset.
+- Note that memory was not the constraint, which is worth saying because it is the limitation readers usually assume.
+- Explain why absolute scores fall with dataset size - the catalogue grows too - and therefore why the comparison is about ordering and gaps rather than levels.
+- State the hyperparameter limitation honestly and quantify it using the partial re-tuning check, rather than naming it and moving on.
+
+### Synthesis
+
+- Present the two ranked tables side by side, or the slope chart, as the single clearest statement of the protocol argument.
+- Draw attention to Popularity specifically: fourth under leave-last-out, last under timestamp, with nothing about the model changed.
+- Note that metadata lifts LightGCN one place under each protocol without changing which model wins either.
+
+### Discussion
+
+- Argue that the choice of evaluation protocol determines the answer to the dissertation's research question, and that this is the central result rather than a caveat.
+- Connect the cost finding to the accuracy finding: LightGCN's advantage under leave-last-out comes at 22 times the training cost, and that multiple grows with data size. Whether the trade is worth making is a deployment question, and the answer at realistic catalogue sizes is not obviously yes.
+- Discuss the 97% tie rate and what it implies about the practical value of any of these models at full-catalogue ranking.
+- State the limitations: scaling measured on one protocol, hyperparameters not re-tuned per size, single seed for the scaling runs, and LightGCN not trainable at full scale within the compute budget.
+
+### Key Quantitative Values
+
+**Significance, paired Wilcoxon on per-user NDCG@10, seed 42:**
+- LightGCN over BPR-MF, leave-last-out: +17.0%, p = 5.8e-05
+- BPR-MF over LightGCN, timestamp: +178.0%, p = 2.2e-41
+- ItemKNN over LightGCN, leave-last-out: +17.0%, p = 2.4e-04
+- LightGCN+BLaIR over LightGCN: +7.6% (p = 1.8e-03) and +32.4% (p = 1.5e-05)
+- BPR-MF+BLaIR against BPR-MF: −14.2% (p = 2.0e-04) and −8.1% (p = 0.78)
+- approximately 97% of users tied in every comparison
+
+**Scaling, leave-last-out, seed 42:**
+- subsets: 1.83M / 4.95M / 12.19M training interactions
+- LightGCN seconds per epoch: 6.88 / 49.98 / 303.41; fitted exponent 1.996
+- BPR-MF seconds per epoch: 0.84 / 4.65 / 19.00
+- wall-clock ratio LightGCN to BPR-MF: 13.8x on small, 22.1x on medium
+- peak GPU memory on full: 5.4 GB
+- NDCG@10 on small / medium: ItemKNN 0.00948 / 0.00878, LightGCN 0.00811 / 0.00705, BPR-MF 0.00693 / 0.00447
+- BPR-MF on full: 0.00209 in 39 minutes
+- BPR-MF regularisation optimum on medium: 0.03 (0.00471) against 0.10 selected on small (0.00447)
+
+**Synthesis, rank changes between protocols:**
+- BPR-MF 5th to 1st, Popularity 4th to 8th, ItemKNN 1st to 4th

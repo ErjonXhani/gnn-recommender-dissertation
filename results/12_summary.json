@@ -1,0 +1,400 @@
+{
+  "notebook": "12_significance_scaling_synthesis",
+  "significance": {
+    "test": "Wilcoxon signed-rank on per-user NDCG@10, paired by user",
+    "seeds": "single seed (42) so every model is averaged over the same number of runs",
+    "comparisons": [
+      {
+        "protocol": "last_out",
+        "A": "LightGCN",
+        "B": "BPR-MF",
+        "mean A": 0.008105142042040825,
+        "mean B": 0.0069276392459869385,
+        "relative": 0.16997170448303223,
+        "A wins": 637,
+        "B wins": 408,
+        "tied": 48955,
+        "p": 5.821240119985305e-05
+      },
+      {
+        "protocol": "timestamp",
+        "A": "BPR-MF",
+        "B": "LightGCN",
+        "mean A": 0.004971741233021021,
+        "mean B": 0.001788476831279695,
+        "relative": 1.779874563217163,
+        "A wins": 592,
+        "B wins": 235,
+        "tied": 49173,
+        "p": 2.160241712603138e-41
+      },
+      {
+        "protocol": "last_out",
+        "A": "ItemKNN",
+        "B": "LightGCN",
+        "mean A": 0.009479228529334069,
+        "mean B": 0.008105142042040825,
+        "relative": 0.16953268433371682,
+        "A wins": 693,
+        "B wins": 603,
+        "tied": 48704,
+        "p": 0.00023956613064760233
+      },
+      {
+        "protocol": "last_out",
+        "A": "LightGCN+BLaIR",
+        "B": "LightGCN",
+        "mean A": 0.008718823082745075,
+        "mean B": 0.008105142042040825,
+        "relative": 0.0757150650024414,
+        "A wins": 490,
+        "B wins": 404,
+        "tied": 49106,
+        "p": 0.001762832049280405
+      },
+      {
+        "protocol": "timestamp",
+        "A": "LightGCN+BLaIR",
+        "B": "LightGCN",
+        "mean A": 0.0023683339823037386,
+        "mean B": 0.001788476831279695,
+        "relative": 0.32421839237213135,
+        "A wins": 333,
+        "B wins": 240,
+        "tied": 49427,
+        "p": 1.447925478714751e-05
+      },
+      {
+        "protocol": "last_out",
+        "A": "BPR-MF+BLaIR",
+        "B": "BPR-MF",
+        "mean A": 0.005943720228970051,
+        "mean B": 0.0069276392459869385,
+        "relative": -0.14202803373336792,
+        "A wins": 403,
+        "B wins": 442,
+        "tied": 49155,
+        "p": 0.00020202751329634339
+      },
+      {
+        "protocol": "timestamp",
+        "A": "BPR-MF+BLaIR",
+        "B": "BPR-MF",
+        "mean A": 0.0045676580630242825,
+        "mean B": 0.004971741233021021,
+        "relative": -0.08127599954605103,
+        "A wins": 478,
+        "B wins": 296,
+        "tied": 49226,
+        "p": 0.7780973315238953
+      }
+    ]
+  },
+  "scaling": {
+    "subsets": [
+      {
+        "subset": "small",
+        "users": 258597,
+        "items": 105298,
+        "interactions": 1829582,
+        "LightGCN s/epoch": 6.88,
+        "BPR-MF s/epoch": 0.84
+      },
+      {
+        "subset": "medium",
+        "users": 676170,
+        "items": 211842,
+        "interactions": 4945119,
+        "LightGCN s/epoch": 49.98,
+        "BPR-MF s/epoch": 4.65
+      },
+      {
+        "subset": "full",
+        "users": 1641026,
+        "items": 368228,
+        "interactions": 12191484,
+        "LightGCN s/epoch": 303.41,
+        "BPR-MF s/epoch": 19.0
+      }
+    ],
+    "cost_exponent_lightgcn": 1.996,
+    "wall_clock_ratio": {
+      "small": 13.8,
+      "medium": 22.1
+    },
+    "results": [
+      {
+        "subset": "small",
+        "model": "ItemKNN",
+        "seed": 42,
+        "users": 258597,
+        "items": 105298,
+        "interactions": 1829582,
+        "best_epoch": NaN,
+        "minutes": 0.1880785306294759,
+        "hit_rate@10": 0.01735999993979931,
+        "recall@10": 0.01735999993979931,
+        "ndcg@10": 0.009479228407144547,
+        "mrr@10": 0.007088857237249613,
+        "hit_rate@20": 0.02645999938249588,
+        "recall@20": 0.02645999938249588,
+        "ndcg@20": 0.011764067225158215,
+        "mrr@20": 0.0077077848836779594
+      },
+      {
+        "subset": "small",
+        "model": "BPR-MF",
+        "seed": 42,
+        "users": 258597,
+        "items": 105298,
+        "interactions": 1829582,
+        "best_epoch": 18.0,
+        "minutes": 2.194929273923238,
+        "hit_rate@10": 0.012160000391304493,
+        "recall@10": 0.012160000391304493,
+        "ndcg@10": 0.0069276392459869385,
+        "mrr@10": 0.005372500047087669,
+        "hit_rate@20": 0.019279999658465385,
+        "recall@20": 0.019279999658465385,
+        "ndcg@20": 0.008720668964087963,
+        "mrr@20": 0.005860577337443829
+      },
+      {
+        "subset": "small",
+        "model": "LightGCN",
+        "seed": 42,
+        "users": 258597,
+        "items": 105298,
+        "interactions": 1829582,
+        "best_epoch": 300.0,
+        "minutes": 30.23104748328527,
+        "hit_rate@10": 0.016200000420212746,
+        "recall@10": 0.016200000420212746,
+        "ndcg@10": 0.008105142042040825,
+        "mrr@10": 0.0056657069362699986,
+        "hit_rate@20": 0.025280000641942024,
+        "recall@20": 0.025280000641942024,
+        "ndcg@20": 0.010376631282269955,
+        "mrr@20": 0.006276307161897421
+      },
+      {
+        "subset": "medium",
+        "model": "ItemKNN",
+        "seed": 42,
+        "users": 676170,
+        "items": 211842,
+        "interactions": 4945119,
+        "best_epoch": NaN,
+        "minutes": 0.5398443659146627,
+        "hit_rate@10": 0.016359999775886536,
+        "recall@10": 0.016359999775886536,
+        "ndcg@10": 0.008783509954810143,
+        "mrr@10": 0.006498722359538078,
+        "hit_rate@20": 0.022859999909996986,
+        "recall@20": 0.022859999909996986,
+        "ndcg@20": 0.010414556600153446,
+        "mrr@20": 0.006939983461052179
+      },
+      {
+        "subset": "medium",
+        "model": "BPR-MF",
+        "seed": 42,
+        "users": 676170,
+        "items": 211842,
+        "interactions": 4945119,
+        "best_epoch": 8.0,
+        "minutes": 9.80899084409078,
+        "hit_rate@10": 0.009440000168979168,
+        "recall@10": 0.009440000168979168,
+        "ndcg@10": 0.004470351617783308,
+        "mrr@10": 0.0029666349291801453,
+        "hit_rate@20": 0.014659999869763851,
+        "recall@20": 0.014659999869763851,
+        "ndcg@20": 0.005776351783424616,
+        "mrr@20": 0.0033179426100105047
+      },
+      {
+        "subset": "medium",
+        "model": "LightGCN",
+        "seed": 42,
+        "users": 676170,
+        "items": 211842,
+        "interactions": 4945119,
+        "best_epoch": 300.0,
+        "minutes": 216.38561262289684,
+        "hit_rate@10": 0.014460000209510326,
+        "recall@10": 0.014460000209510326,
+        "ndcg@10": 0.007054722402244806,
+        "mrr@10": 0.004833190701901913,
+        "hit_rate@20": 0.023639999330043793,
+        "recall@20": 0.023639999330043793,
+        "ndcg@20": 0.009355754591524601,
+        "mrr@20": 0.005454444792121649
+      },
+      {
+        "subset": "full",
+        "model": "BPR-MF",
+        "seed": 42,
+        "users": 1641026,
+        "items": 368228,
+        "interactions": 12191484,
+        "best_epoch": 4.0,
+        "minutes": 38.90417145093282,
+        "hit_rate@10": 0.0041600000113248825,
+        "recall@10": 0.0041600000113248825,
+        "ndcg@10": 0.002092055045068264,
+        "mrr@10": 0.001476762117817998,
+        "hit_rate@20": 0.008200000040233135,
+        "recall@20": 0.008200000040233135,
+        "ndcg@20": 0.0030984606128185987,
+        "mrr@20": 0.0017451639287173748
+      }
+    ]
+  },
+  "synthesis": [
+    {
+      "protocol": "last_out",
+      "model": "ItemKNN",
+      "features": "-",
+      "ndcg@10": 0.0094792284071445,
+      "std": NaN,
+      "seeds": 1,
+      "label": "ItemKNN"
+    },
+    {
+      "protocol": "last_out",
+      "model": "LightGCN",
+      "features": "BLaIR",
+      "ndcg@10": 0.008635040683050951,
+      "std": 0.0001137012486677078,
+      "seeds": 3,
+      "label": "LightGCN + BLaIR"
+    },
+    {
+      "protocol": "last_out",
+      "model": "LightGCN",
+      "features": "-",
+      "ndcg@10": 0.008124100354810556,
+      "std": 6.570082934119323e-05,
+      "seeds": 3,
+      "label": "LightGCN"
+    },
+    {
+      "protocol": "last_out",
+      "model": "Popularity",
+      "features": "-",
+      "ndcg@10": 0.0075170951895415,
+      "std": NaN,
+      "seeds": 1,
+      "label": "Popularity"
+    },
+    {
+      "protocol": "last_out",
+      "model": "BPR-MF",
+      "features": "-",
+      "ndcg@10": 0.006404829304665327,
+      "std": 0.0006876834153527869,
+      "seeds": 5,
+      "label": "BPR-MF"
+    },
+    {
+      "protocol": "last_out",
+      "model": "BPR-MF",
+      "features": "BLaIR",
+      "ndcg@10": 0.005738496935615937,
+      "std": 0.0003387742275582041,
+      "seeds": 3,
+      "label": "BPR-MF + BLaIR"
+    },
+    {
+      "protocol": "last_out",
+      "model": "GraphSAGE",
+      "features": "-",
+      "ndcg@10": 0.004254855991651614,
+      "std": 0.00019514322595427173,
+      "seeds": 3,
+      "label": "GraphSAGE"
+    },
+    {
+      "protocol": "last_out",
+      "model": "NGCF",
+      "features": "-",
+      "ndcg@10": 0.004245576603959004,
+      "std": 0.00012959728336667592,
+      "seeds": 3,
+      "label": "NGCF"
+    },
+    {
+      "protocol": "timestamp",
+      "model": "BPR-MF",
+      "features": "-",
+      "ndcg@10": 0.004649654775857925,
+      "std": 0.0003995251070947537,
+      "seeds": 5,
+      "label": "BPR-MF"
+    },
+    {
+      "protocol": "timestamp",
+      "model": "BPR-MF",
+      "features": "BLaIR",
+      "ndcg@10": 0.004217520356178284,
+      "std": 0.00030375870108072744,
+      "seeds": 3,
+      "label": "BPR-MF + BLaIR"
+    },
+    {
+      "protocol": "timestamp",
+      "model": "LightGCN",
+      "features": "BLaIR",
+      "ndcg@10": 0.0022984265039364495,
+      "std": 6.610109799491422e-05,
+      "seeds": 3,
+      "label": "LightGCN + BLaIR"
+    },
+    {
+      "protocol": "timestamp",
+      "model": "ItemKNN",
+      "features": "-",
+      "ndcg@10": 0.0021653224248439,
+      "std": NaN,
+      "seeds": 1,
+      "label": "ItemKNN"
+    },
+    {
+      "protocol": "timestamp",
+      "model": "LightGCN",
+      "features": "-",
+      "ndcg@10": 0.001575416885316372,
+      "std": 0.0001975268252474575,
+      "seeds": 3,
+      "label": "LightGCN"
+    },
+    {
+      "protocol": "timestamp",
+      "model": "NGCF",
+      "features": "-",
+      "ndcg@10": 0.0015011874105160434,
+      "std": 0.00010298030941433337,
+      "seeds": 3,
+      "label": "NGCF"
+    },
+    {
+      "protocol": "timestamp",
+      "model": "GraphSAGE",
+      "features": "-",
+      "ndcg@10": 0.0013429514753321807,
+      "std": 0.0001430794665694772,
+      "seeds": 3,
+      "label": "GraphSAGE"
+    },
+    {
+      "protocol": "timestamp",
+      "model": "Popularity",
+      "features": "-",
+      "ndcg@10": 0.0012449322966858,
+      "std": NaN,
+      "seeds": 1,
+      "label": "Popularity"
+    }
+  ]
+}

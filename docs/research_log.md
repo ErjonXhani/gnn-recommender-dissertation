@@ -484,3 +484,57 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - The matrix factorisation arm was built as LightGCN with zero layers, so this also re-confirms the zero-layer identity through a full training run in a third notebook.
 - All 12 checks passed.
 
+
+## 8 August 2026 – Notebook 12: Significance, Scaling and Synthesis
+
+### Completed
+
+- Built `12_significance_scaling_synthesis.ipynb`.
+- Ran paired significance tests over the per-user scores saved by Notebooks 08, 10 and 11.
+- Measured training cost per epoch for LightGCN and matrix factorisation on all three nested subsets.
+- Ran a performance comparison of ItemKNN, LightGCN and matrix factorisation on `small` and `medium`, and matrix factorisation alone on `full`.
+- Checked whether matrix factorisation's regularisation optimum shifts at larger scale.
+- Assembled every test result from the project into one table, with figures for the cost scaling and the protocol inversion.
+
+### Design Decisions
+
+- Used the Wilcoxon signed-rank test rather than a paired t-test. Per-user NDCG is heavily zero-inflated and far from normal.
+- Paired by user rather than comparing independent samples, since users differ enormously in how predictable they are and pairing removes that variance.
+- Ran the tests on a single seed. Averaging per-user scores over different numbers of seeds spreads small non-zero values across more users and distorts the win counts; matrix factorisation has five seeds and the graph models three.
+- Weighted effect sizes over p-values in interpretation. With 50,000 paired users almost any difference is significant, so the win counts and relative differences carry the information.
+- Measured scaling on leave-last-out only, because it is the protocol where the three models sit closest together and so where scale has most room to change the ordering.
+- Held hyperparameters at the values selected on `small` rather than re-tuning at each size, since tuning LightGCN on `medium` costs 3.6 hours per configuration. A partial check on matrix factorisation quantifies what this costs.
+- Compared models only within a subset. Matrix factorisation on `full` is reported as a feasibility demonstration, not as a comparison against models trained on smaller data.
+- Re-ran every model on `small` through the new code path rather than reusing earlier results, so all rows come from one pipeline and the earlier numbers are re-verified.
+
+### Key Findings: significance
+
+- **The two headline results are firm.** LightGCN beats matrix factorisation under leave-last-out (p = 5.8e-05) and matrix factorisation beats LightGCN under the timestamp protocol (p = 2.2e-41). ItemKNN beating LightGCN under leave-last-out is also significant (p = 2.4e-04).
+- Metadata's benefit to LightGCN is significant on both protocols (p = 1.8e-03 and 1.5e-05).
+- **Metadata's cost to matrix factorisation is significant under leave-last-out only** (−14.2%, p = 2.0e-04). Under the timestamp protocol the mean falls in all three seeds, by 4% to 9%, but the paired test reaches significance in only one. That finding should be stated as consistent in direction and weakly supported, not as established.
+- **About 97% of users are tied in every comparison** - neither model retrieves anything the user wanted. Every reported difference is decided by the remaining 3%.
+
+### Key Findings: scaling
+
+- **LightGCN's training cost grows quadratically with dataset size**, fitted exponent 1.996 across subsets spanning 1.8 to 12.2 million interactions. Each batch propagates over the whole graph while the number of batches also grows with the data.
+- **The cost gap to matrix factorisation widens with scale**: 13.8 times more wall-clock time on `small`, 22.1 times on `medium`. The per-epoch ratio understates this because LightGCN also requires more epochs.
+- Matrix factorisation trains on the full 12.2 million interactions in 39 minutes. The same run for LightGCN would take roughly 25 hours, which is why the performance comparison stops at `medium`.
+- Memory is not the constraint - peak usage was 5.4 GB on the full subset. Time is.
+- **Accuracy falls for every model as the data grows**, because the catalogue grows with it and there are more candidates to rank against. Absolute scores are therefore not comparable across subsets.
+- **The ordering is preserved from `small` to `medium` and the gaps widen.** LightGCN's advantage over matrix factorisation grows from 1.17x to 1.58x, and ItemKNN's over LightGCN from 1.17x to 1.25x.
+- Matrix factorisation's regularisation optimum on `medium` is 0.03 rather than the 0.10 selected on `small`, worth 5.4%. Holding hyperparameters fixed therefore overstates the widening gap by roughly that much; corrected, LightGCN's advantage is 1.50x rather than 1.58x.
+
+### Key Findings: synthesis
+
+- **The ranking of models inverts almost completely between protocols.** Matrix factorisation moves from fifth to first, Popularity from fourth to last, ItemKNN from first to fourth.
+- Popularity's collapse is the clearest signature of the leakage. Nothing about the model changed between protocols, only whether its item counts were allowed to include activity occurring after the test point.
+
+### Verification
+
+- The scaling study retrained every model on `small` from scratch and reproduced Notebooks 08 and 10 exactly: ItemKNN 0.00948, LightGCN 0.00811, matrix factorisation 0.00693.
+- All 13 checks passed.
+
+### Next Steps
+
+- Experimental work is complete. Remaining effort goes to the dissertation document.
+- Carry forward as future work: a second product category spanning a different density, a content-based ItemKNN, and per-size hyperparameter tuning for the scaling study.

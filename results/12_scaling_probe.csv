@@ -1,0 +1,4 @@
+subset,users,items,interactions,nodes,edges,graph_build_s,LightGCN s/epoch,BPR-MF s/epoch,peak GB
+small,258597,105298,1829582,363895,3659164,0.5,6.88,0.84,0.9
+medium,676170,211842,4945119,888012,9890238,0.2,49.98,4.65,2.3
+full,1641026,368228,12191484,2009254,24382968,0.5,303.41,19.0,5.4
