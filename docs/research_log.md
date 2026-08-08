@@ -462,7 +462,7 @@ The validation demonstrates that my independently implemented preprocessing pipe
 
 ### Key Findings: metadata
 
-- **Metadata helps the graph model and hurts matrix factorisation.** LightGCN improves from 0.00812 to 0.00864 under leave-last-out (+6.3%) and from 0.00158 to 0.00230 under timestamp (+45.9%). Matrix factorisation falls from 0.00641 to 0.00574 (−10.5%) and from 0.00465 to 0.00422 (−9.2%). The matrix factorisation comparisons use identical regularisation in both arms, so this is not a tuning artefact.
+- **Metadata helps the graph model and hurts matrix factorisation.** LightGCN improves from 0.00812 to 0.00864 under leave-last-out (+6.3%) and from 0.00158 to 0.00230 under timestamp (+45.9%). - Matrix factorisation falls from 0.00641 to 0.00574 (−10.5%) and from 0.00465 to 0.00422 (−9.2%). The matrix factorisation comparisons use identical regularisation in both arms, so this is not a tuning artefact. The significance testing in Notebook 12 later qualified the timestamp result: consistent in direction across seeds, but reaching significance in only one of three.
 - **Content and propagation are complementary rather than interchangeable.** Propagation smooths a feature-derived representation across the graph neighbourhood, where it reinforces genuine co-purchase structure; without propagation the projection is extra capacity the model overfits. The tuning behaviour agrees: adding features moved LightGCN's optimal regularisation down thirtyfold, while matrix factorisation's optimum did not move at all.
 - **The benefit is largest where the collaborative signal is weakest** - seven times larger under the timestamp protocol than under leave-last-out. It does not, however, overturn Notebook 10: matrix factorisation still wins the leakage-free protocol with or without metadata.
 - Features gave matrix factorisation a 13% gain on validation and a 23.5% loss on test, the same validation-test divergence that caused the checkpoint problem in Notebook 10, and for the same reason: under leave-last-out, validation is each user's second-to-last item and test is their last one, so a weakly regularised model that memorises recent history scores well on one and badly on the other.
@@ -485,7 +485,7 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - All 12 checks passed.
 
 
-## 8 August 2026 – Notebook 12: Significance, Scaling and Synthesis
+## 7-8 August 2026 – Notebook 12: Significance, Scaling and Synthesis
 
 ### Completed
 
