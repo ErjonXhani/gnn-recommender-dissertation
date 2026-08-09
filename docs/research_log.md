@@ -237,6 +237,8 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - Final feature dimensions were **807** (BLaIR), **423** (MiniLM), and **295** (TF-IDF+SVD).
 - All validation checks passed, including feature alignment, cold-item coverage, and reconstruction of all subset feature matrices.
 
+### Discussion (09 Aug 26)
+- **BLaIR's pretraining is a potential leakage route, and the encoder ablation rules it out.** BLaIR was released by the dataset authors alongside Amazon Reviews 2023 (Hou et al., arXiv:2403.03952) and pretrained on review–metadata pairs from the whole dataset, including the period held out for testing. Its weights could therefore in principle encode something about the test window that a general-purpose encoder could not. The encoder comparison in Notebook 11 addresses this directly: MiniLM, trained on general web text with no exposure to Amazon data, scores 0.00873 against BLaIR's 0.00872. If BLaIR's pretraining conferred any test-period knowledge it would appear as an advantage over MiniLM, and it does not.
 
 ## 30 July 2026 – Evaluation and Baseline Models
 
