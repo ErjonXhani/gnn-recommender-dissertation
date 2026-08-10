@@ -646,7 +646,7 @@ Mention:
 ### Implementation Issues
 
 - Report that GraphSAGE could not train in its published form, and give the structural reason rather than treating it as a tuning failure: ReLU on the final layer plus L2 normalisation bounds every score to [0, 1], capping the margin BPR can open.
-- Report that removing the final nonlinearity made GraphSAGE worse, and present this as measured counter-evidence to LightGCN's claim that nonlinear activation harms collaborative filtering.
+- Report that removing the final nonlinearity made GraphSAGE worse, and relate it correctly to LightGCN's ablation: their Table 1 shows removing nonlinearity alone also slightly reduced NGCF's performance, so this is a stronger instance of an effect they observed rather than counter-evidence. Note that the direct test of their claim - removing NGCF's own nonlinearity on this data - was not run, and belongs in future work.
 - State that GraphSAGE is therefore an adaptation rather than a reproduction, and that this asymmetry with LightGCN and NGCF is acknowledged rather than hidden.
 
 ### Results
@@ -752,8 +752,9 @@ Mention:
 **Metadata effect, test NDCG@10:**
 - LightGCN, leave-last-out: 0.00812 → 0.00864 (+6.3%)
 - LightGCN, timestamp: 0.00158 → 0.00230 (+45.9%)
-- BPR-MF, leave-last-out: 0.00641 → 0.00574 (−10.5%)
-- BPR-MF, timestamp: 0.00465 → 0.00422 (−9.2%)
+- BPR-MF, leave-last-out: 0.00630 → 0.00574 (−8.9%)
+- BPR-MF, timestamp: 0.00454 → 0.00422 (−7.0%)
+  (BPR-MF baselines restricted to the three seeds used here; Notebook 10 quotes 0.00641 and 0.00465 over five)
 - GraphSAGE, leave-last-out: 0.00445 → 0.00537 (+20.7%, single seed)
 
 **Encoders, leave-last-out, seed 42, against 0.00811 without features:**
@@ -771,7 +772,8 @@ Mention:
 - BPR-MF, no features 0.00060 (1.3×)
 - BPR-MF + BLaIR 0.00053 (1.2×)
 - random 0.00046
-- open ranking against the full catalogue: every model at or below chance
+- open ranking against the full catalogue: every model at or below chance (random 0.00004, best model 0.00003, six of eight exactly zero)
+- value of features on cold items: GraphSAGE 5.92x, LightGCN 1.34x, BPR-MF 0.88x
 
 **Verification:** retrained cold-start models reproduce Notebooks 10 and 11 to five decimal places, including the zero-layer identity for matrix factorisation
 
