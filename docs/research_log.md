@@ -1,4 +1,4 @@
-## 23 July 2026 - Review and Metadata Dataset Statistics
+## 22-23 July 2026 - Notebook 01-02: Review and Metadata Dataset Statistics
 
 ### Completed
 - Implemented streaming data processing for the Amazon Electronics review dataset.
@@ -32,7 +32,7 @@
 - Merge review interactions with selected metadata attributes.
 - Prepare temporal train/validation/test splits.
 
-## 24 July 2026 - Data Preprocessing
+## 24 July 2026 - Notebook 03: Data Preprocessing
 
 ### Completed
 - Started and completed the main data preprocessing pipeline for the Amazon Electronics dataset.
@@ -75,7 +75,7 @@
 - No missing titles, stores, main categories, or combined metadata text remain after cleaning.
 
 
-## 25 July 2026 - Preprocessing Validation
+## 25 July 2026 - Notebook 03: Preprocessing Validation
 
 ### Activities Completed
 
@@ -109,7 +109,7 @@ The validation demonstrates that my independently implemented preprocessing pipe
 
 
 
-## 26 July 2026 – Benchmark Reproduction
+## 26 July 2026 – Notebook 03: Benchmark Reproduction
 
 - Literature Review
 - Modified the preprocessing pipeline to retain the **earliest** duplicate review instead of the most recent.
@@ -118,7 +118,7 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - Validated the new dataset against the official Amazon Reviews 2023 Electronics 5-core benchmark.
 - Achieved **15,473,535 / 15,473,536 (99.999994%)** matching interactions, with only one remaining duplicate-review tie case.
 
-## 27 July 2026 – Temporal Train/Validation/Test Splitting
+## 27 July 2026 – Notebook 04: Temporal Train/Validation/Test Splitting
 
 ### Completed
 
@@ -149,7 +149,7 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - The two protocols evaluate different populations: leave-last-out covers all 1,641,026 users, while the timestamp split covers 469,838 (28.63%) and leaves 36,208 users without training history.
 - All integrity checks passed successfully.
 
-## 28 July 2026 – Nested Dataset Subsets
+## 28 July 2026 – Notebook 05: Nested Dataset Subsets
 
 ### Completed
 
@@ -176,7 +176,7 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - The `full` subset reproduced the Notebook 04 split counts exactly.
 - All 32 integrity checks passed.
 
-## 28 July 2026 – Graph Construction
+## 28 July 2026 – Notebook 06: Graph Construction
 
 ### Completed
 
@@ -205,7 +205,7 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - All **54 validation checks** passed successfully.
 
 
-## 29 July 2026 – Item Features
+## 29 July 2026 – Notebook 07: Item Features
 
 ### Completed
 
@@ -240,7 +240,7 @@ The validation demonstrates that my independently implemented preprocessing pipe
 ### Discussion (09 Aug 26)
 - **BLaIR's pretraining is a potential leakage route, and the encoder ablation rules it out.** BLaIR was released by the dataset authors alongside Amazon Reviews 2023 (Hou et al., arXiv:2403.03952) and pretrained on review–metadata pairs from the whole dataset, including the period held out for testing. Its weights could therefore in principle encode something about the test window that a general-purpose encoder could not. The encoder comparison in Notebook 11 addresses this directly: MiniLM, trained on general web text with no exposure to Amazon data, scores 0.00873 against BLaIR's 0.00872. If BLaIR's pretraining conferred any test-period knowledge it would appear as an advantage over MiniLM, and it does not.
 
-## 30 July 2026 – Evaluation and Baseline Models
+## 30 July 2026 – Notebook 08: Evaluation and Baseline Models
 
 ### Completed
 
@@ -275,7 +275,7 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - Absolute metric values are low by design. Ranking is against the full catalogue of 105,298 items rather than a sampled subset, which Ji et al. note produces values much lower than sampled-metric results. Popularity nonetheless achieves 159 times the random hit rate.
 - All automated checks passed, including the evaluator agreeing exactly with an independent implementation on a 2,000-user sample.
 
-## 31 July 2026 – Graph Model Implementation and LightGCN Reproduction
+## 31 July 2026 – Notebook 09: Graph Model Implementation and LightGCN Reproduction
 
 ### Completed
 
@@ -477,7 +477,9 @@ The validation demonstrates that my independently implemented preprocessing pipe
 
 - **Leave-last-out barely has a cold-start problem**: 425 cold items affecting 338 users, 0.7% of the evaluation set, against 8,353 items affecting 22,130 users, 44.3%, under the timestamp protocol. This is a second way the standard protocol understates the difficulty of the real task, alongside the temporal leakage.
 - **New products never appear in an unrestricted recommendation list.** Ranking across the full catalogue, every model scores at or below chance on cold items, metadata included. A cold item's embedding is never updated during training so it stays near its random initialisation, and warm items crowd it out. Surfacing new products requires a deliberate mechanism rather than better item representations.
-- **Restricted to cold items, features matter and the model ranking inverts.** GraphSAGE, the weakest model overall at 0.00149, is the strongest on cold items at 0.00232 - five times random and twice LightGCN with the same features. LightGCN gains 34% from features here; matrix factorisation gains nothing, scoring barely above random with or without them.
+- **Restricted to cold items, the model ranking inverts.** GraphSAGE, the weakest model overall at 0.00149, is the strongest on cold items at 0.00232, five times the random baseline and twice LightGCN with the same features.
+- **Features are worth six times as much to GraphSAGE as to LightGCN on cold items.** Adding BLaIR raises GraphSAGE from 0.00039 to 0.00232 (5.9x) against LightGCN's 0.00086 to 0.00116 (1.35x); matrix factorisation gains nothing (0.00060 to 0.00053). This states the aggregation argument as a measurement rather than inferring it from absolute scores.
+- Without features the models cluster around chance: 0.9x to 1.9x the random baseline, with GraphSAGE falling slightly below it. A cold item has no edges in the training graph, so its representation comes almost entirely from its random initialisation unless metadata supplies something.
 - This is the property GraphSAGE was included to test, and it is the only setting in the project where it wins. Aggregating features into a representation beats projecting them onto an ID embedding where there is no interaction history to look up.
 
 ### Verification
