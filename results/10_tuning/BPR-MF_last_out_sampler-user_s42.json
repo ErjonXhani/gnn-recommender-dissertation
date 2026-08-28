@@ -1,0 +1,1 @@
+{"protocol": "last_out", "sampling": "user", "l2_reg": 0.1, "best_epoch": 18, "ndcg@10": 0.0069276392459869385}

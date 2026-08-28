@@ -238,7 +238,7 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - All validation checks passed, including feature alignment, cold-item coverage, and reconstruction of all subset feature matrices.
 
 ### Discussion (09 Aug 26)
-- **BLaIR's pretraining is a potential leakage route, and the encoder ablation rules it out.** BLaIR was released by the dataset authors alongside Amazon Reviews 2023 (Hou et al., arXiv:2403.03952) and pretrained on review–metadata pairs from the whole dataset, including the period held out for testing. Its weights could therefore in principle encode something about the test window that a general-purpose encoder could not. The encoder comparison in Notebook 11 addresses this directly: MiniLM, trained on general web text with no exposure to Amazon data, scores 0.00873 against BLaIR's 0.00872. If BLaIR's pretraining conferred any test-period knowledge it would appear as an advantage over MiniLM, and it does not.
+- **BLaIR's pretraining is a potential leakage route, and the encoder ablation tests one narrow part of it.** *(Narrowed 20 August 2026; the earlier wording said the ablation "rules it out", which is broader than the control can show.)* BLaIR was released by the dataset authors alongside Amazon Reviews 2023 (Hou et al., arXiv:2403.03952) and pretrained on review–metadata pairs from the whole dataset, including the period held out for testing. Its weights could therefore in principle encode something about the test window that a general-purpose encoder could not. The encoder comparison in Notebook 11 tests whether that shows up as an observable advantage: MiniLM, trained on general web text with no exposure to Amazon data, scores 0.00873 against BLaIR's 0.00872, so no advantage is observed. **What this does and does not establish.** It shows BLaIR does not outperform an encoder with no Amazon exposure, on one seed with no equivalence test. It cannot detect leakage carried in the metadata *text and 2023 snapshot itself*, which is shared by all three encoders equally and would therefore be invisible to any comparison between them. Dropping `Best Sellers Rank` removed the clearest post-hoc popularity field, but a residual snapshot limitation remains and should be reported as an open limitation rather than a closed one.
 
 ## 30 July 2026 – Notebook 08: Evaluation and Baseline Models
 
@@ -300,7 +300,7 @@ The validation demonstrates that my independently implemented preprocessing pipe
 
 - **LightGCN reproduces.** Three seeds give recall@20 0.18184 ± 0.00004 and NDCG@20 0.15542 ± 0.00041, against published values of 0.1823 and 0.1555. NDCG is within seed variance; recall is 0.25% low.
 - **The sampling scheme accounts for most of the initial gap, and it is not described in the paper.** LightGCN's released code draws a user uniformly and then one of that user's items; iterating over interactions instead gives recall@20 0.1738 and NDCG@20 0.1482, roughly 4.6% below published on both metrics.
-- The sampler is worth 4.7% of recall here, more than the 3.9% the paper reports for increasing propagation depth from one layer to three. An undocumented implementation detail therefore mattered more than the mechanism the paper is about.
+- The sampler is worth 4.6% of Recall@20 here (0.17383 to 0.18186), more than the 3.9% the paper reports for increasing propagation depth from one layer to three. An undocumented implementation detail therefore mattered more than the mechanism the paper is about.
 - Part of the remaining 0.25% is estimator choice. The paper reports the best of roughly 100 test evaluations while these runs report the final epoch; on seed 1 those two estimators differ by 0.00024.
 - The 0-layer identity holds exactly at initialisation and to 1e-7 after five epochs. Both models are individually deterministic, so the residual is the order in which the loss and regularisation gradients are summed, not nondeterminism.
 - Parameter counts confirm the architectures: LightGCN has 11,644,640 parameters at dimension 32, exactly the two embedding tables and nothing else; NGCF adds 6,336 and GraphSAGE 4,160.
@@ -370,7 +370,8 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - **Comparing hyperparameters at a fixed epoch budget confounds regularisation strength with convergence speed.** Stronger regularisation converges more slowly but reaches higher: at 150 epochs the surface appeared flat, but at 300 epochs 3e-4 peaked at epoch 120 and then declined while 1e-3 was still improving at epoch 230.
 - **Depth and regularisation interact, and optimal regularisation falls monotonically with depth**: 1e-2, 3e-3, 3e-3, 1e-3 for one to four layers. Deeper models receive more smoothing from propagation and need less explicit shrinkage.
 - **Checkpoint granularity has to be scaled to a model's convergence timescale.** Evaluating BPR-MF every 10 epochs instead of every 2 selected a checkpoint around epoch 70 that scored marginally higher on validation and 30% worse on test. Correcting it reduced LightGCN's leave-last-out advantage from 67% to 27% and widened BPR-MF's timestamp lead; both corrections moved against the hypothesis being tested.
-- A 500-epoch probe showed no reliable improvement past epoch 300. The apparent peak at 500 was the maximum of twenty-one noisy evaluations on a flat plateau, about two standard deviations above the plateau mean - the same maximisation bias identified in LightGCN's published Gowalla figure.
+- ⚠ **UNSUPPORTED — DO NOT REUSE IN THE REPORT (flagged 18 Aug 2026).** The entry below asserts a 500-epoch probe for which no artefact survives: Notebook 10 contains no such cell, and all 50 cached runs in `results/10_tuning/` are at 300 epochs. Either it was lost in the 55→44 cell restructure or the entry records reasoning rather than a completed run. The 300-epoch budget is instead justified in the report from the cached histories, which show the validation plateau directly. Retained here only as a record of what was believed at the time.
+  - ~~A 500-epoch probe showed no reliable improvement past epoch 300. The apparent peak at 500 was the maximum of twenty-one noisy evaluations on a flat plateau, about two standard deviations above the plateau mean - the same maximisation bias identified in LightGCN's published Gowalla figure.~~
 - Cost per epoch on this data: LightGCN 7.07s, NGCF 11.42s, GraphSAGE 6.87s. Sparse propagation is far more expensive here than arithmetic alone predicts, because the graph averages 10 neighbours per node against Gowalla's 23 and short rows multiply per-row overhead.
 
 ### Key Findings: model behaviour
@@ -421,7 +422,7 @@ The validation demonstrates that my independently implemented preprocessing pipe
 - **This contradicts the sparsity explanation previously offered for the Amazon results.** LightGCN's advantage over matrix factorisation is 17.2% on Gowalla, where users hold 27 training interactions, and 26.7% on Amazon Electronics under leave-last-out, where they hold 7. The advantage is larger on the sparser data, so density does not account for the collapse under the timestamp protocol.
 - **What separates the three cases is temporal structure in the evaluation.** Gowalla's split is random, with no temporal shift. Amazon leave-last-out orders each user's interactions but leaves the training graph containing activity that postdates many users' test items. The Amazon timestamp split has a genuine global gap and no leakage. LightGCN gains 17.2%, then 26.7%, then loses by a factor of 2.9. The working hypothesis is that graph propagation benefits disproportionately from temporal leakage: propagation aggregates a neighbourhood encoding what was co-consumed during the training window, and where that window overlaps the test period the neighbourhood carries information about the future it should not have.
 - **The properly tuned baseline beats the published one by 20%.** BPR-MF here reaches Recall@20 0.15515 against the 0.1291 reported for MF on the same files. Consequently NGCF's published figure of 0.1569 is only **1.1%** above this baseline, where its paper claims an 11.68% improvement over its own MF; and LightGCN's published 0.1823 is **17.5%** above it, rather than the 41% implied by the published MF number.
-- The gain over the published baseline comes from two sources already documented in this project: user-uniform sampling, worth about 4.7% on this dataset, and a regularisation sweep with an interior optimum at 1e-3.
+- The gain over the published baseline comes from two sources already documented in this project: user-uniform sampling, worth about 4.6% on Recall@20, and a regularisation sweep with an interior optimum at 1e-3.
 - This is the Rendle et al. and Ferrari Dacrema et al. critique of under-tuned baselines in recommender research, reproduced as a direct measurement on the benchmark's own data using code verified to reproduce both papers.
 
 - **ItemKNN comes last on Gowalla** at Recall@20 0.14396, below matrix factorisation (0.15515) and 26% below LightGCN (0.18184). On the Amazon data under leave-last-out it comes first. The ordering of methods is therefore almost completely different between the two datasets.
@@ -452,7 +453,7 @@ The validation demonstrates that my independently implemented preprocessing pipe
 ### Design Decisions
 
 - Carried only LightGCN into the main comparison. NGCF and GraphSAGE both lost to matrix factorisation in Notebook 10, so adding features to them would be improving models that are already behind.
-- Reused Notebook 10's feature-free results rather than retraining them. The feature projection is initialised at zero, so the two models start numerically identical and the no-feature arm *is* the feature model with the projection unused.
+- Reused Notebook 10's feature-free results rather than retraining them. The justification is that those runs used identical data, splits, evaluator, loss, sampler, optimiser, dimension and seeds, so they are a matched baseline. The zero-initialised projection is a separate and narrower point: it guarantees the two arms produce identical outputs *at initialisation*, not that the no-feature arm is the feature model with the projection unused — the projection is trainable and does not stay at zero. The feature model therefore carries additional capacity that starts inert, which is itself a candidate explanation for the matrix factorisation result.
 - Gave every arm its own regularisation sweep. This proved essential rather than pedantic: features moved LightGCN's optimum from 3e-3 to 1e-4, and using the old value would have reported a 2% gain instead of the true 15% on validation.
 - Implemented matrix factorisation with features as LightGCN with `n_layers=0`, which Notebook 09 verified is exactly matrix factorisation. This reused tested code rather than adding a feature hook to a second class.
 - Matched checkpoint granularity per model, as in Notebook 10: every 2 epochs for matrix factorisation, every 10 for the graph models, patience held equal in epochs.
@@ -471,12 +472,12 @@ The validation demonstrates that my independently implemented preprocessing pipe
 
 ### Key Findings: encoders
 
-- **The encoder does not matter.** BLaIR 0.00872, MiniLM 0.00873, TF-IDF+SVD 0.00857 - a range of about 1.5 standard deviations of the seed variance measured for BLaIR. The domain-specific pre-training supplied with the dataset gives no measurable advantage over a general-purpose sentence encoder, and word counts with a matrix decomposition capture three quarters of the benefit.
+- **No encoder showed an advantage over the others.** *(Narrowed 20 August 2026 from "the encoder does not matter", which asserts equivalence the design cannot support.)* BLaIR 0.00872, MiniLM 0.00873, TF-IDF+SVD 0.00857 - a range of about 1.5 standard deviations of the seed variance measured for BLaIR. **Single seed per encoder, no equivalence test**, so this is an absence of observed difference and not established equivalence. The domain-specific pre-training supplied with the dataset gives no observed advantage over a general-purpose sentence encoder, and word counts with a matrix decomposition capture most of the benefit. All three encoders are frozen; a fine-tuned condition was not tested.
 
 ### Key Findings: cold start
 
 - **Leave-last-out barely has a cold-start problem**: 425 cold items affecting 338 users, 0.7% of the evaluation set, against 8,353 items affecting 22,130 users, 44.3%, under the timestamp protocol. This is a second way the standard protocol understates the difficulty of the real task, alongside the temporal leakage.
-- **New products never appear in an unrestricted recommendation list.** Ranking across the full catalogue, every model scores at or below chance on cold items, metadata included: random scores 0.00004, the best model reaches 0.00003, and six of eight score exactly zero. A cold item's embedding is never updated during training so it stays near its random initialisation, and warm items crowd it out. Surfacing new products requires a deliberate mechanism rather than better item representations.
+- **New products never appear in an unrestricted recommendation list.** Ranking across the full catalogue, every model scores at or below chance on cold items, metadata included: random scores 0.00004, the best model reaches 0.00003, and six of eight score exactly zero. A cold item has no training interactions and therefore no collaborative edges, so message passing contributes nothing to its representation; the feature-augmented models still obtain a feature-derived component, and still fail to rank above random. ⚠ *Narrowed 20 August 2026. The earlier wording said a cold item's embedding "stays near its random initialisation, and warm items crowd it out". No embedding norms or score distributions were measured anywhere in this project, so that mechanism is untested and must not be stated as fact.* Surfacing new products plausibly requires a deliberate mechanism rather than better item representations, but that was not tested here.
 - **Restricted to cold items, the model ranking inverts.** GraphSAGE, the weakest model overall at 0.00149, is the strongest on cold items at 0.00232, five times the random baseline and twice LightGCN with the same features.
 - **Features are worth six times as much to GraphSAGE as to LightGCN on cold items.** Adding BLaIR raises GraphSAGE from 0.00039 to 0.00232 (5.9x) against LightGCN's 0.00086 to 0.00116 (1.34x); matrix factorisation is unchanged (0.00060 to 0.00053, 0.88x). This states the aggregation argument as a measurement rather than inferring it from absolute scores.
 - Without features the models cluster around chance: 0.9x to 1.9x the random baseline, with GraphSAGE falling slightly below it. A cold item has no edges in the training graph, so its representation comes almost entirely from its random initialisation unless metadata supplies something.
@@ -542,3 +543,43 @@ The validation demonstrates that my independently implemented preprocessing pipe
 
 - Experimental work is complete. Remaining effort goes to the dissertation document.
 - Carry forward as future work: a second product category spanning a different density, a content-based ItemKNN, and per-size hyperparameter tuning for the scaling study.
+
+
+
+## 25-28 August 2026
+
+## Matched-regularisation rerun of the metadata comparison
+
+### Decisions
+
+- Retrained the feature-free arm of every metadata comparison inside Notebook 11 at the feature model's regularisation. The original comparison paired each arm at its own tuned value and read the feature-free arm from Notebook 10, so the reported change mixed the effect of the features with a regularisation change and with any difference between the notebooks.
+- Kept both comparisons rather than replacing one with the other. Independently tuned arms answer whether the best model with features beats the best model without them; matched arms isolate what the features contribute. Reporting only the matched figures would look like a method chosen after seeing the result, since they are the larger ones.
+- Extended GraphSAGE to three seeds so its effect is comparable with LightGCN's, and checked the direction at both 1e-4 and 3e-3 to confirm it does not depend on which regularisation the pair is matched at.
+- Added NGCF at a single seed as a confirmatory check, using its feature-free optimum of 1e-2 for both arms. Using the value selected without features is deliberately conservative: if features still help there, the measured effect is a lower bound.
+- Did not extend NGCF to three seeds. Eight further runs at roughly nine hours could not overturn a 40-point gap when GraphSAGE's three timestamp seeds spanned only 12.
+- Left BPR-MF alone. It already paired the same regularisation across both arms, which is why audit item D9 named only LightGCN and GraphSAGE.
+
+### Key Findings: matched metadata comparison
+
+| Model | last_out | timestamp | seeds |
+|---|---|---|---|
+| LightGCN | +13.8% (sd 1.4) | +58.2% (sd 9.3) | 3 |
+| NGCF | +13.3% | +17.6% | 1 |
+| GraphSAGE | +12.2% (sd 5.2) | +12.7% (sd 6.8) | 3 |
+| BPR-MF | -8.9% | -7.0% | 3 |
+
+- **The correction was substantial and did not run in one direction.** LightGCN's leave-last-out effect rose from 6.3% to 13.8% and its timestamp effect from 45.9% to 58.2%, because it sits on a steep regularisation curve and moving the feature-free arm off its optimum costs it real accuracy. GraphSAGE's leave-last-out effect fell from 20.7% to 13.2% on the same seed, because its selected 3e-3 was not actually its best on test.
+- **Under leave-last-out all three graph models agree within 1.6 points**, across architectures that differ substantially in how they aggregate, while BPR-MF loses accuracy under both protocols. The split by model family is the firmest part of the result.
+- **The amplification of the metadata benefit under the timestamp protocol appears only for LightGCN.** NGCF propagates over the same symmetric adjacency and does not show it, so propagation alone does not explain the effect. One architectural difference worth noting is that NGCF renormalises every layer while LightGCN averages layers unnormalised, which would bound how far an injected feature vector travels. That is a candidate explanation, not something these runs test.
+- GraphSAGE is much noisier than LightGCN, sd 5.2 against 1.4 under leave-last-out. Its effects are positive in all six runs but only about two standard deviations from zero at three seeds, so the direction is consistent rather than established.
+
+### Verification
+
+- Two independent measurements of the offset between Notebooks 10 and 11 at identical settings, seed 42, leave-last-out: GraphSAGE at 3e-3 scored 3.9% higher here, NGCF at 1e-2 scored 4.6% higher. Same direction and similar size, so the difference looks systematic rather than nondeterminism. The two notebooks are not interchangeable and feature-free arms should not be read across them.
+- NGCF reached the 300-epoch cap in every run under both protocols, so its absolute scores are a floor rather than a converged result. The comparison remains valid because both arms stop at the same budget.
+
+### Next Steps
+
+- Notebook 12's significance tests for the metadata effect were run against the unmatched numbers and need repeating against the matched runs.
+- Audit items D9 and R need updating, and the cold-start configurations still pair regularisation unequally. That cannot affect the cold conclusion, since every graph model scores exactly 0.000000 with and without features.
+- Remaining effort goes to the dissertation document.

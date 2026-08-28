@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 510" width="780" height="510" font-family="Georgia, 'Times New Roman', serif">
+  <rect width="780" height="510" fill="#ffffff"/>
+
+  <text x="390" y="30" text-anchor="middle" font-size="17" font-weight="bold" fill="#1a1a1a">What does propagation contribute?</text>
+  <text x="390" y="52" text-anchor="middle" font-size="12.5" fill="#555555">Four positions in the graph collaborative filtering literature</text>
+
+  <line x1="390" y1="64" x2="390" y2="84" stroke="#999999" stroke-width="1.2"/>
+  <line x1="200" y1="84" x2="580" y2="84" stroke="#999999" stroke-width="1.2"/>
+  <line x1="200" y1="84" x2="200" y2="104" stroke="#999999" stroke-width="1.2"/>
+  <line x1="580" y1="84" x2="580" y2="104" stroke="#999999" stroke-width="1.2"/>
+
+  <!-- Box 1 -->
+  <rect x="40" y="104" width="340" height="150" rx="4" fill="#f5f5f3" stroke="#8a8a8a" stroke-width="1.1"/>
+  <text x="60" y="132" font-size="14" font-weight="bold" fill="#1a1a1a">Propagation is the mechanism</text>
+  <text x="60" y="158" font-size="12.5" fill="#333333">Aggregating over the graph captures</text>
+  <text x="60" y="177" font-size="12.5" fill="#333333">collaborative signal that a conventional</text>
+  <text x="60" y="196" font-size="12.5" fill="#333333">scoring function does not represent</text>
+  <text x="60" y="215" font-size="12.5" fill="#333333">directly.</text>
+  <text x="60" y="240" font-size="11.5" font-style="italic" fill="#5a5a5a">Wang et al. (2019); He et al. (2020)</text>
+
+  <!-- Box 2 -->
+  <rect x="400" y="104" width="340" height="150" rx="4" fill="#f5f5f3" stroke="#8a8a8a" stroke-width="1.1"/>
+  <text x="420" y="132" font-size="14" font-weight="bold" fill="#1a1a1a">Propagation is dispensable</text>
+  <text x="420" y="158" font-size="12.5" fill="#333333">Removing or replacing message passing</text>
+  <text x="420" y="177" font-size="12.5" fill="#333333">yields competitive accuracy at</text>
+  <text x="420" y="196" font-size="12.5" fill="#333333">substantially lower computational cost.</text>
+  <text x="420" y="228" font-size="11.5" font-style="italic" fill="#5a5a5a">Mao et al. (2021); Xia et al. (2023);</text>
+  <text x="420" y="244" font-size="11.5" font-style="italic" fill="#5a5a5a">Park et al. (2024)</text>
+
+  <!-- Box 3 -->
+  <rect x="40" y="274" width="340" height="150" rx="4" fill="#eaf0f6" stroke="#5b7fa6" stroke-width="1.4"/>
+  <text x="60" y="302" font-size="14" font-weight="bold" fill="#1a1a1a">Propagation is one filter among several</text>
+  <text x="60" y="328" font-size="12.5" fill="#333333">Neighbourhood methods, low-rank matrix</text>
+  <text x="60" y="347" font-size="12.5" fill="#333333">factorisation, linear autoencoders and</text>
+  <text x="60" y="366" font-size="12.5" fill="#333333">LightGCN are special cases of one</text>
+  <text x="60" y="385" font-size="12.5" fill="#333333">graph-filtering framework.</text>
+  <text x="60" y="410" font-size="11.5" font-style="italic" fill="#5a5a5a">Shen et al. (2021)</text>
+
+  <!-- Box 4 -->
+  <rect x="400" y="274" width="340" height="150" rx="4" fill="#f5f5f3" stroke="#8a8a8a" stroke-width="1.1"/>
+  <text x="420" y="302" font-size="14" font-weight="bold" fill="#1a1a1a">The depth required is unsettled</text>
+  <text x="420" y="328" font-size="12.5" fill="#333333">Over-smoothing is severe where</text>
+  <text x="420" y="347" font-size="12.5" fill="#333333">interaction data is sparse, and no</text>
+  <text x="420" y="366" font-size="12.5" fill="#333333">optimal propagation depth is</text>
+  <text x="420" y="385" font-size="12.5" fill="#333333">established.</text>
+  <text x="420" y="410" font-size="11.5" font-style="italic" fill="#5a5a5a">Chen et al. (2020); Cai et al. (2023)</text>
+
+  <line x1="40" y1="446" x2="740" y2="446" stroke="#cccccc" stroke-width="1"/>
+  <text x="40" y="470" font-size="12" fill="#444444">These positions cannot all hold. RQ2 asks how LightGCN, NGCF and GraphSAGE compare in</text>
+  <text x="40" y="489" font-size="12" fill="#444444">recommendation quality and in the propagation depth they require.</text>
+</svg>

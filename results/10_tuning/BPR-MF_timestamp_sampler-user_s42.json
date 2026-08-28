@@ -1,0 +1,1 @@
+{"protocol": "timestamp", "sampling": "user", "l2_reg": 0.15, "best_epoch": 28, "ndcg@10": 0.004971741233021021}

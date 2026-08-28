@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 532" width="780" height="532" font-family="Georgia, 'Times New Roman', serif">
+  <rect width="780" height="532" fill="#ffffff"/>
+
+  <text x="390" y="30" text-anchor="middle" font-size="17" font-weight="bold" fill="#1a1a1a">Design choices that shape a reported comparison</text>
+
+  <rect x="180" y="46" width="420" height="34" rx="4" fill="#eaf0f6" stroke="#5b7fa6" stroke-width="1.4"/>
+  <text x="390" y="68" text-anchor="middle" font-size="13.5" font-weight="bold" fill="#1a1a1a">A reported comparison of two recommenders</text>
+
+  <line x1="390" y1="80" x2="390" y2="96" stroke="#999999" stroke-width="1.2"/>
+  <line x1="120" y1="96" x2="660" y2="96" stroke="#999999" stroke-width="1.2"/>
+
+  <text x="46" y="118" font-size="10.5" font-weight="bold" fill="#666666" letter-spacing="0.6">CHOICE</text>
+  <text x="262" y="118" font-size="10.5" font-weight="bold" fill="#666666" letter-spacing="0.6">WHAT VARYING IT CAN CHANGE</text>
+  <text x="564" y="118" font-size="10.5" font-weight="bold" fill="#666666" letter-spacing="0.6">EVIDENCE</text>
+
+  <!-- Row 1 -->
+  <rect x="40" y="126" width="700" height="74" rx="3" fill="#f5f5f3" stroke="#8a8a8a" stroke-width="1"/>
+  <line x1="250" y1="126" x2="250" y2="200" stroke="#c8c8c8" stroke-width="1"/>
+  <line x1="552" y1="126" x2="552" y2="200" stroke="#c8c8c8" stroke-width="1"/>
+  <text x="56" y="156" font-size="13" font-weight="bold" fill="#1a1a1a">How the data is split</text>
+  <text x="56" y="178" font-size="11.5" font-style="italic" fill="#5a5a5a">into training and test</text>
+  <text x="262" y="156" font-size="12.5" fill="#333333">What a model may know at prediction</text>
+  <text x="262" y="178" font-size="12.5" fill="#333333">time. Split choice alone can reorder systems.</text>
+  <text x="564" y="156" font-size="11.5" fill="#444444">Meng et al. (2020);</text>
+  <text x="564" y="176" font-size="11.5" fill="#444444">Ji et al. (2023)</text>
+
+  <!-- Row 2 -->
+  <rect x="40" y="208" width="700" height="74" rx="3" fill="#f5f5f3" stroke="#8a8a8a" stroke-width="1"/>
+  <line x1="250" y1="208" x2="250" y2="282" stroke="#c8c8c8" stroke-width="1"/>
+  <line x1="552" y1="208" x2="552" y2="282" stroke="#c8c8c8" stroke-width="1"/>
+  <text x="56" y="238" font-size="13" font-weight="bold" fill="#1a1a1a">How well the</text>
+  <text x="56" y="257" font-size="13" font-weight="bold" fill="#1a1a1a">baselines are tuned</text>
+  <text x="262" y="238" font-size="12.5" fill="#333333">Whether the comparators are represented</text>
+  <text x="262" y="260" font-size="12.5" fill="#333333">at their best, or merely at their defaults.</text>
+  <text x="564" y="234" font-size="11.5" fill="#444444">Ferrari Dacrema et al.</text>
+  <text x="564" y="254" font-size="11.5" fill="#444444">(2021); Rendle et al. (2020);</text>
+  <text x="564" y="274" font-size="11.5" fill="#444444">Shehzad and Jannach (2023)</text>
+
+  <!-- Row 3 -->
+  <rect x="40" y="290" width="700" height="74" rx="3" fill="#f5f5f3" stroke="#8a8a8a" stroke-width="1"/>
+  <line x1="250" y1="290" x2="250" y2="364" stroke="#c8c8c8" stroke-width="1"/>
+  <line x1="552" y1="290" x2="552" y2="364" stroke="#c8c8c8" stroke-width="1"/>
+  <text x="56" y="320" font-size="13" font-weight="bold" fill="#1a1a1a">How the candidate</text>
+  <text x="56" y="339" font-size="13" font-weight="bold" fill="#1a1a1a">set is constructed</text>
+  <text x="262" y="320" font-size="12.5" fill="#333333">Sampled candidates do not preserve</text>
+  <text x="262" y="342" font-size="12.5" fill="#333333">relative statements, even in expectation.</text>
+  <text x="564" y="320" font-size="11.5" fill="#444444">Krichene and</text>
+  <text x="564" y="340" font-size="11.5" fill="#444444">Rendle (2020)</text>
+
+  <!-- Row 4 -->
+  <rect x="40" y="372" width="700" height="74" rx="3" fill="#f5f5f3" stroke="#8a8a8a" stroke-width="1"/>
+  <line x1="250" y1="372" x2="250" y2="446" stroke="#c8c8c8" stroke-width="1"/>
+  <line x1="552" y1="372" x2="552" y2="446" stroke="#c8c8c8" stroke-width="1"/>
+  <text x="56" y="402" font-size="13" font-weight="bold" fill="#1a1a1a">How significance is</text>
+  <text x="56" y="421" font-size="13" font-weight="bold" fill="#1a1a1a">assessed</text>
+  <text x="262" y="402" font-size="12.5" fill="#333333">At recommendation scale, tests return</text>
+  <text x="262" y="424" font-size="12.5" fill="#333333">significance for negligible effects.</text>
+  <text x="564" y="402" font-size="11.5" fill="#444444">Ihemelandu and</text>
+  <text x="564" y="422" font-size="11.5" fill="#444444">Ekstrand (2023)</text>
+
+  <line x1="40" y1="468" x2="740" y2="468" stroke="#cccccc" stroke-width="1"/>
+  <text x="40" y="492" font-size="12" fill="#444444">Each choice can change what the comparison appears to show. RQ1 asks how the first two affect</text>
+  <text x="40" y="511" font-size="12" fill="#444444">the comparison between graph recommenders and tuned non-graph baselines.</text>
+</svg>

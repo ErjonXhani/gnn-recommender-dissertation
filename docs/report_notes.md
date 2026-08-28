@@ -573,7 +573,7 @@ Mention:
 - Report that matrix factorisation was given its own regularisation sweep rather than inheriting LightGCN's, since on the Amazon data its optimum was several hundred times larger.
 - Report the density result and state plainly that it contradicts the sparsity explanation: LightGCN's advantage over matrix factorisation is smaller on the denser dataset, not larger. Redirect the explanation to temporal structure in the evaluation, and carry this into Notebook 10's discussion.
 - Report the baseline audit as a finding in its own right: a properly tuned BPR-MF exceeds the published MF baseline on the same files by 20%, which reduces NGCF's published advantage over matrix factorisation from 11.68% to 1.1%, and LightGCN's from 41% to 17.5%.
-- Attribute the gain to the two things already documented in this project - user-uniform sampling, worth about 4.7% here, and a regularisation sweep with an interior optimum - rather than to anything novel.
+- Attribute the gain to the two things already documented in this project - user-uniform sampling, worth about 4.6% on Recall@20 here, and a regularisation sweep with an interior optimum - rather than to anything novel.
 - Connect this to Rendle et al. and Ferrari Dacrema et al. on under-tuned baselines in recommender research, and note that this is a direct measurement on the benchmark's own data using code verified to reproduce both papers, rather than a citation.
 - State the caveats: best-epoch selection here against validation-based early stopping in the original, so this implementation gets the more generous estimator; NGCF re-implemented NDCG, so Recall@20 is the safer basis for comparison; and the Gowalla NGCF and MF arms are single-seed.
 
@@ -605,7 +605,7 @@ Mention:
 **Sampling scheme, seed 42:**
 - interaction-uniform: Recall@20 0.1738, NDCG@20 0.1482 (−4.6%, −4.7%)
 - user-uniform: Recall@20 0.1819, NDCG@20 0.1551 (−0.22%, −0.26%)
-- sampler effect 4.7% against 3.9% for one layer to three in the paper's Table 3
+- sampler effect 4.6% on Recall@20 against 3.9% for one layer to three in the paper's Table 3
 
 **Implementation checks:**
 - 0-layer identity: exact at initialisation, 1e-7 after five epochs

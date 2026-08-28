@@ -1,0 +1,5 @@
+protocol,sampling,l2_reg,best_epoch,ndcg@10
+last_out,interaction,0.1,86,0.005776248872280121
+last_out,user,0.1,18,0.0069276392459869385
+timestamp,interaction,0.15,90,0.003167655086144805
+timestamp,user,0.15,28,0.004971741233021021
