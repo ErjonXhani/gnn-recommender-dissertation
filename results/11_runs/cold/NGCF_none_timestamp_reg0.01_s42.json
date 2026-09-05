@@ -1,0 +1,1 @@
+{"model": "NGCF", "encoder": "none", "protocol": "timestamp", "l2_reg": 0.01, "seed": 42, "best_epoch": 300, "minutes": 67.38197625875473, "all_ndcg@10": 0.0014296816661953926, "cold_ndcg@10": 0.0, "cold_hit_rate@10": 0.0}

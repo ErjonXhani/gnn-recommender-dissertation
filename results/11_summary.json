@@ -56,45 +56,89 @@
     {
       "model": "LightGCN",
       "protocol": "last_out",
-      "without": 0.008124100354810556,
+      "without": 0.007592215668410063,
       "with BLaIR": 0.008635040683050951,
-      "change": 0.06289192721971348
+      "change": 0.13757767393784773,
+      "change sd": 0.013841677244268635,
+      "seeds": 3
     },
     {
       "model": "LightGCN",
       "protocol": "timestamp",
-      "without": 0.001575416885316372,
+      "without": 0.0014546910921732585,
       "with BLaIR": 0.0022984265039364495,
-      "change": 0.4589322517480092
+      "change": 0.5821772792491057,
+      "change sd": 0.0933837937602205,
+      "seeds": 3
+    },
+    {
+      "model": "NGCF",
+      "protocol": "last_out",
+      "without": 0.004318448714911938,
+      "with BLaIR": 0.004893059842288494,
+      "change": 0.13305961592003612,
+      "change sd": NaN,
+      "seeds": 1
+    },
+    {
+      "model": "NGCF",
+      "protocol": "timestamp",
+      "without": 0.001378680462948978,
+      "with BLaIR": 0.0016207664739340544,
+      "change": 0.17559254482163178,
+      "change sd": NaN,
+      "seeds": 1
+    },
+    {
+      "model": "GraphSAGE",
+      "protocol": "last_out",
+      "without": 0.004643527635683616,
+      "with BLaIR": 0.00521058759962519,
+      "change": 0.12198655146230257,
+      "change sd": 0.05161767060520125,
+      "seeds": 3
+    },
+    {
+      "model": "GraphSAGE",
+      "protocol": "timestamp",
+      "without": 0.0012866897353281577,
+      "with BLaIR": 0.001448264151501159,
+      "change": 0.12653047511745874,
+      "change sd": 0.06749508227447407,
+      "seeds": 3
     },
     {
       "model": "BPR-MF",
       "protocol": "last_out",
       "without": 0.006300964703162511,
       "with BLaIR": 0.005738496935615937,
-      "change": -0.08926692880286502
+      "change": -0.07367432383704094,
+      "change sd": 0.1726341929868653,
+      "seeds": 3
     },
     {
       "model": "BPR-MF",
       "protocol": "timestamp",
       "without": 0.004537105094641447,
       "with BLaIR": 0.004217520356178284,
-      "change": -0.07043802861005122
+      "change": -0.06944377980219223,
+      "change sd": 0.025291900907743248,
+      "seeds": 3
     }
   ],
   "cold_start_restricted": [
     {
       "model": "GraphSAGE",
       "encoder": "blair",
-      "ndcg@10": 0.0023187692277133465,
-      "hit_rate@10": 0.006868504453450441,
+      "ndcg@10": 0.002819181652739644,
+      "hit_rate@10": 0.007546317297965288,
       "recall@10": NaN,
       "mrr@10": NaN,
       "hit_rate@20": NaN,
       "recall@20": NaN,
       "ndcg@20": NaN,
       "mrr@20": NaN,
-      "x random": "5.1x"
+      "x random": "6.2x"
     },
     {
       "model": "LightGCN",
@@ -112,15 +156,15 @@
     {
       "model": "LightGCN",
       "encoder": "none",
-      "ndcg@10": 0.0008631154196336865,
-      "hit_rate@10": 0.002530501689761877,
+      "ndcg@10": 0.0007061369833536446,
+      "hit_rate@10": 0.0027564391493797302,
       "recall@10": NaN,
       "mrr@10": NaN,
       "hit_rate@20": NaN,
       "recall@20": NaN,
       "ndcg@20": NaN,
       "mrr@20": NaN,
-      "x random": "1.9x"
+      "x random": "1.6x"
     },
     {
       "model": "BPR-MF",
@@ -136,6 +180,32 @@
       "x random": "1.3x"
     },
     {
+      "model": "NGCF",
+      "encoder": "blair",
+      "ndcg@10": 0.0005829476867802441,
+      "hit_rate@10": 0.002169001381844282,
+      "recall@10": NaN,
+      "mrr@10": NaN,
+      "hit_rate@20": NaN,
+      "recall@20": NaN,
+      "ndcg@20": NaN,
+      "mrr@20": NaN,
+      "x random": "1.3x"
+    },
+    {
+      "model": "NGCF",
+      "encoder": "none",
+      "ndcg@10": 0.0005401870002970099,
+      "hit_rate@10": 0.0019430636893957853,
+      "recall@10": NaN,
+      "mrr@10": NaN,
+      "hit_rate@20": NaN,
+      "recall@20": NaN,
+      "ndcg@20": NaN,
+      "mrr@20": NaN,
+      "x random": "1.2x"
+    },
+    {
       "model": "BPR-MF",
       "encoder": "blair",
       "ndcg@10": 0.0005292198620736599,
@@ -149,6 +219,19 @@
       "x random": "1.2x"
     },
     {
+      "model": "GraphSAGE",
+      "encoder": "none",
+      "ndcg@10": 0.00048912747297436,
+      "hit_rate@10": 0.002033438766375184,
+      "recall@10": NaN,
+      "mrr@10": NaN,
+      "hit_rate@20": NaN,
+      "recall@20": NaN,
+      "ndcg@20": NaN,
+      "mrr@20": NaN,
+      "x random": "1.1x"
+    },
+    {
       "model": "random",
       "encoder": "-",
       "ndcg@10": 0.0004551882448140532,
@@ -160,19 +243,6 @@
       "ndcg@20": 0.0007709061610512435,
       "mrr@20": 0.0006460401928052306,
       "x random": "1.0x"
-    },
-    {
-      "model": "GraphSAGE",
-      "encoder": "none",
-      "ndcg@10": 0.000391690235119313,
-      "hit_rate@10": 0.001671938574872911,
-      "recall@10": NaN,
-      "mrr@10": NaN,
-      "hit_rate@20": NaN,
-      "recall@20": NaN,
-      "ndcg@20": NaN,
-      "mrr@20": NaN,
-      "x random": "0.9x"
     }
   ]
 }
