@@ -1,0 +1,1 @@
+{"model": "LightGCN", "encoder": "blair", "protocol": "last_out", "l2_reg": 0.0001, "seed": 42, "best_epoch": 110, "minutes": 25.254888681570687, "all_ndcg@10": 0.008718823082745075, "cold_ndcg@10": 0.0, "cold_hit_rate@10": 0.0}

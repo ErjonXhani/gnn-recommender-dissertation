@@ -1,0 +1,10 @@
+,leave-last-out,timestamp
+items changed of 10,5.4,6.9
+users with no overlap,7.9%,22.5%
+"median popularity, none","2,069","2,906"
+"median popularity, BLaIR","1,281",900
+popularity ratio,0.62,0.31
+Popularity baseline,"3,136","3,654"
+"none, % of baseline",66%,80%
+"BLaIR, % of baseline",41%,25%
+"metadata effect, matched",+13.8%,+58.2%
