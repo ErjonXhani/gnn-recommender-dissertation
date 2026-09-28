@@ -61,8 +61,8 @@ data/        datasets (gitignored, see below)
 |---|---|
 | `01_reviews_dataset_statistics` | Raw review data: scale, sparsity, rating and activity distributions |
 | `02_metadata_dataset_exploration` | Product metadata: field completeness, coverage, feature selection |
-| `03_data_preprocessing_earliest` | Filtering, iterative 5-core, deduplication, identifier encoding |
-| `03_validation_against_official_benchmark_earliest` | Reconciliation against the official released benchmark files |
+| `03_01_data_preprocessing_earliest` | Filtering, iterative 5-core, deduplication, identifier encoding |
+| `03_02_validation_against_official_benchmark_earliest` | Reconciliation against the official released benchmark files |
 | `04_train_validation_test_split_earliest` | Both splitting protocols, with leakage and coverage checks |
 | `05_nested_dataset_subsets` | Nested subsets of increasing size for the scaling study |
 | `06_graph_construction` | Bipartite graphs, normalised adjacencies, structural verification |

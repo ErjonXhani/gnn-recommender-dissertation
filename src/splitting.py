@@ -76,8 +76,7 @@ OFFICIAL_T2: int = 1_658_002_729_837  # 2022-07-16 20:18:49.837 UTC
 # within the same millisecond, in which case "the final interaction" would be
 # decided by whatever order the rows happen to occupy in memory, and the split
 # would not be reproducible across runs. Appending ``item_idx`` as a final key
-# makes the ordering deterministic. The choice of ``item_idx`` is arbitrary;
-# the property that matters is that it is *fixed*.
+# makes the ordering deterministic. The choice of ``item_idx`` is arbitrary.
 
 SORT_KEYS: Sequence[str] = ("user_idx", "timestamp", "item_idx")
 
