@@ -12,8 +12,8 @@ City St George's, University of London
 
 ## Overview
 
-This project compares three graph neural network recommenders — LightGCN, NGCF and
-GraphSAGE — against non-graph baselines on the Amazon Reviews 2023 Electronics dataset,
+This project compares three graph neural network recommenders (LightGCN, NGCF and
+GraphSAGE) against non-graph baselines on the Amazon Reviews 2023 Electronics dataset,
 and investigates whether product metadata improves recommendation performance.
 
 Two evaluation protocols are used throughout: leave-last-out, which is common in the
@@ -33,7 +33,7 @@ larger effect on the conclusions than the choice of graph architecture.
   interchangeable.
 
 - **On cold items the ranking reverses.** GraphSAGE, the weakest model overall, becomes
-  the strongest on items unseen during training — the setting where its feature
+  the strongest on items unseen during training, the setting where its feature
   aggregation should be most useful.
 
 - **A properly tuned baseline closes most of the gap that graph models are reported to open.** On Gowalla, a tuned
@@ -120,16 +120,16 @@ are therefore specific to this hardware configuration.
 
 ### Data and models used
 
-- **Amazon Reviews 2023**, Electronics category — Hou et al. (2024),
+- **Amazon Reviews 2023**, Electronics category. Hou et al. (2026),
   [amazon-reviews-2023.github.io](https://amazon-reviews-2023.github.io/), arXiv:2403.03952.
   The preprocessing here reproduces the authors' official 5-core benchmark, which is used
   to validate it in Notebook 03.
-- **Gowalla train/test split** — downloaded in Notebook 09 from
+- **Gowalla train/test split**, downloaded in Notebook 09 from
   [gusye1234/LightGCN-PyTorch](https://github.com/gusye1234/LightGCN-PyTorch). The split
   originates with NGCF (Wang et al., 2019) and was reused by LightGCN.
-- **BLaIR** (`hyp1231/blair-roberta-base`) — released by the dataset authors, pretrained on
+- **BLaIR** (`hyp1231/blair-roberta-base`), released by the dataset authors, pretrained on
   Amazon Reviews 2023 metadata.
-- **MiniLM** (`sentence-transformers/all-MiniLM-L6-v2`) — general-purpose sentence encoder,
+- **MiniLM** (`sentence-transformers/all-MiniLM-L6-v2`), a general-purpose sentence encoder
   used as a control.
 
 ### Implementations
