@@ -235,11 +235,3 @@ __pycache__/
 
 *.pt
 
-# Planning, blueprints and audit notes - kept local
-docs/*_blueprint.md
-docs/chapter2_literature_selection.md
-docs/chapter2_reference_audit.md
-docs/chapter3_paragraph_plan.md
-docs/chapter4_results_audit.md
-docs/references.md
-docs/*_handoff.md
