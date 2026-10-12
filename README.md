@@ -123,7 +123,9 @@ The Gowalla reproduction is an **implementation check**, not a claim that Gowall
 - **LightGCN:** He et al. (2020), *LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation*.
 - **NGCF:** Wang et al. (2019), *Neural Graph Collaborative Filtering*.
 - **GraphSAGE:** Hamilton, Ying and Leskovec (2017), *Inductive Representation Learning on Large Graphs*.
-- **BPR:** Rendle et al. (2009), *BPR: Bayesian Personalized Ranking from Implicit Feedback*.
+- **ItemKNN:** Sarwar et al. (2001), *Item-Based Collaborative Filtering Recommendation Algorithms*.
+- **BPR-MF:** Rendle et al. (2009), *BPR: Bayesian Personalized Ranking from Implicit Feedback*.
+
 
 The feature experiments also use `hyp1231/blair-roberta-base` and `sentence-transformers/all-MiniLM-L6-v2`.
 
