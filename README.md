@@ -125,6 +125,8 @@ The Gowalla reproduction is an **implementation check**, not a claim that Gowall
 - **GraphSAGE:** Hamilton, Ying and Leskovec (2017), *Inductive Representation Learning on Large Graphs*.
 - **ItemKNN:** Sarwar et al. (2001), *Item-Based Collaborative Filtering Recommendation Algorithms*.
 - **BPR-MF:** Rendle et al. (2009), *BPR: Bayesian Personalized Ranking from Implicit Feedback*.
+- **Evaluation protocol:** Ji et al. (2023), *A Critical Study on Data Leakage in Recommender System Offline Evaluation*.
+- **Candidate-set evaluation:** Krichene and Rendle (2020), *On Sampled Metrics for Item Recommendation*.
 
 
 The feature experiments also use `hyp1231/blair-roberta-base` and `sentence-transformers/all-MiniLM-L6-v2`.
