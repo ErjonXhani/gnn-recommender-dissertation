@@ -13,7 +13,7 @@ Two protocols are provided:
     used for training. This is the protocol used by the large majority of the
     recommendation literature and by the official ``last_out`` benchmark files.
     It respects each user's *local* timeline but not the *global* timeline, and
-    therefore admits the form of data leakage analysed by Ji et al. (TOIS 2023).
+    therefore admits the form of data leakage analysed by Ji et al. (2023).
 
 ``global_timestamp_split``
     All interactions are partitioned by two absolute cut-off timestamps that are
@@ -21,13 +21,6 @@ Two protocols are provided:
     respects the global timeline and is leakage-free, at the cost of leaving some
     users with no training history at all.
 
-The module deliberately contains no plotting, no file I/O and no printing, so
-that it can be imported by any notebook or script and unit-tested in isolation.
-
-References
-
-Ji, Y. et al. (2023) 'A Critical Study on Data Leakage in Recommender System
-    Offline Evaluation', ACM TOIS. https://doi.org/10.1145/3569930
 """
 
 from __future__ import annotations

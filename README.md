@@ -1,151 +1,137 @@
-# Graph Neural Networks for Recommendation Systems
 
-## Enhancing User–Item Interaction Modelling for E-Commerce Applications
+# Graph Neural Networks for Recommender Systems: Evaluating Performance and Robustness in E-Commerce Settings
 
 **MSc Artificial Intelligence Dissertation**
 
-Author: Erjon Xhani  
-Supervisor: Dr Oleksandr Galkin  
-City St George's, University of London
-
----
+**Author:** Erjon Xhani  
+**Supervisor:** Oleksandr Galkin  
+**Institution:** City St George's, University of London  
+**Year:** 2026
 
 ## Overview
 
-This project compares three graph neural network recommenders (LightGCN, NGCF and
-GraphSAGE) against non-graph baselines on the Amazon Reviews 2023 Electronics dataset,
-and investigates whether product metadata improves recommendation performance.
+This repository contains the experimental implementation and analysis for an MSc dissertation investigating how conclusions about graph-based recommendation depend on evaluation protocol, model configuration, product metadata and cold-item evaluation.
 
-Two evaluation protocols are used throughout: leave-last-out, which is common in the
-literature, and a global timestamp split designed to prevent temporal lookahead of the
-kind described by Ji et al. (2023). The choice of evaluation protocol ultimately had a
-larger effect on the conclusions than the choice of graph architecture.
+Using the **Amazon Reviews 2023 Electronics** dataset, the project compares three graph-based recommenders (**LightGCN, NGCF and GraphSAGE**) with three non-graph methods (**Popularity, ItemKNN and BPR-MF**). The experiments cover:
+
+- **Evaluation protocols:** Leave-last-out and global timestamp splits.
+- **Graph propagation:** Depth, regularisation sensitivity and computational scaling.
+- **Product metadata:** BLaIR features, with an exploratory comparison against MiniLM and TF-IDF with SVD.
+- **Cold-item recommendation:** Ranking against the full catalogue and against cold items only.
+
+Gowalla is used separately to check the LightGCN and NGCF implementations against published benchmark results. It is not a second dataset for the main experimental comparisons.
 
 ## Key findings
 
-- **The ranking of models depends strongly on the evaluation protocol.** Under
-  leave-last-out, LightGCN improves on matrix factorisation by 27%. Under the global
-  timestamp split, matrix factorisation beats LightGCN by a factor of 2.9. Popularity
-  moves from fourth place to last.
+- **Evaluation design changes model rankings.** ItemKNN performed best under leave-last-out, whereas BPR-MF performed best under the global timestamp protocol. LightGCN was the strongest graph model under both.
+- **Depth needs to be considered alongside regularisation.** Retuning regularisation at each propagation depth changed the interpretation for LightGCN and NGCF, while GraphSAGE benefited more consistently from additional layers.
+- **Metadata effects depend on the model.** Adding BLaIR features improved all three graph models under both protocols, while BPR-MF's mean performance decreased.
+- **Cold-item conclusions depend on the candidate set.** Performance was near zero when cold items competed with the full catalogue. With candidates restricted to cold items, GraphSAGE with BLaIR obtained the highest score.
+- **Graph propagation has a growing computational cost.** LightGCN's measured per-epoch training time increased from 8.2 times to 16.0 times that of BPR-MF between the smallest and full dataset subsets. LightGCN training was not completed at full scale.
 
-- **Metadata helps LightGCN but not matrix factorisation**, under both protocols. This
-  suggests that content and graph propagation are complementary rather than
-  interchangeable.
+These findings apply to the experimental settings studied. The two evaluation protocols differ in more than the splitting rule alone. Full results, qualifications and limitations are discussed in the dissertation.
 
-- **On cold items the ranking reverses.** GraphSAGE, the weakest model overall, becomes
-  the strongest on items unseen during training, the setting where its feature
-  aggregation should be most useful.
-
-- **A properly tuned baseline closes most of the gap that graph models are reported to open.** On Gowalla, a tuned
-  BPR-MF beats the published matrix factorisation baseline by 20%, reducing NGCF's
-  reported advantage from 11.7% to 1.1%.
-
-- **LightGCN becomes increasingly expensive as the dataset grows.** Its wall-clock
-  training cost relative to matrix factorisation widens from 14× to 22× between the
-  small and medium subsets.
-
-## Repository layout
+## Repository structure
 
 ```text
-src/         reusable modules imported by the notebooks
-notebooks/   analysis and experiments, in numbered order
-results/     saved metrics, per-user scores and cached training histories
-figures/     figures used in the dissertation
-docs/        research log and report notes
-data/        datasets (gitignored, see below)
+figures/      Figures produced for the dissertation
+notebooks/    Numbered notebooks for experiments and analysis
+results/      Saved metrics, per-user scores and experiment caches
+src/          Reusable Python modules shared by the notebooks
+data/         Local datasets (gitignored; not included in the repository)
 ```
 
-## Notebooks
+The main workflow consists of **13 Jupyter notebooks**, supported by **8 reusable Python modules**. Each notebook documents the experimental steps, includes relevant outputs and ends with a summary of the main findings.
+
+## Notebook guide
 
 | Notebook | Purpose |
-|---|---|
-| `01_reviews_dataset_statistics` | Raw review data: scale, sparsity, rating and activity distributions |
-| `02_metadata_dataset_exploration` | Product metadata: field completeness, coverage, feature selection |
-| `03_01_data_preprocessing_earliest` | Filtering, iterative 5-core, deduplication, identifier encoding |
-| `03_02_validation_against_official_benchmark_earliest` | Reconciliation against the official released benchmark files |
-| `04_train_validation_test_split_earliest` | Both splitting protocols, with leakage and coverage checks |
-| `05_nested_dataset_subsets` | Nested subsets of increasing size for the scaling study |
-| `06_graph_construction` | Bipartite graphs, normalised adjacencies, structural verification |
-| `07_item_features` | Text encoding with BLaIR, MiniLM and TF-IDF+SVD; leakage audit |
-| `08_evaluation_and_baselines` | Evaluator verification; Popularity, ItemKNN and BPR-MF |
-| `09_models_and_verification` | Model implementations; reproduction of LightGCN and NGCF on Gowalla |
-| `10_hyperparameter_tuning` | Tuning and the collaborative comparison across both protocols |
-| `11_metadata_and_cold_start` | Metadata ablations, encoder comparison, cold-start evaluation |
-| `12_significance_scaling_synthesis` | Significance tests, scaling study, final tables and figures |
+| --- | --- |
+| `01_reviews_dataset_statistics.ipynb` | Explore review counts, activity patterns and sparsity. |
+| `02_metadata_dataset_exploration.ipynb` | Examine product metadata coverage and available fields. |
+| `03_01_data_preprocessing_earliest.ipynb` | Clean interactions, deduplicate using the earliest review, apply iterative five-core filtering and encode IDs. |
+| `03_02_validation_against_official_benchmark_earliest.ipynb` | Check the final preprocessing against the official Electronics benchmark. |
+| `04_train_validation_test_split_earliest.ipynb` | Build and validate both evaluation protocols, including temporal checks. |
+| `05_nested_dataset_subsets.ipynb` | Construct nested dataset subsets for the scaling analysis. |
+| `06_graph_construction.ipynb` | Build and verify the bipartite interaction graphs. |
+| `07_item_features.ipynb` | Audit metadata and construct BLaIR, MiniLM and TF-IDF/SVD representations. |
+| `08_evaluation_and_baselines.ipynb` | Verify ranking evaluation and implement non-graph baselines. |
+| `09_models_and_verification.ipynb` | Implement and verify graph models; reproduce selected Gowalla benchmark results. |
+| `10_hyperparameter_tuning.ipynb` | Tune models and conduct the interaction-only comparisons. |
+| `11_metadata_and_cold_start.ipynb` | Run metadata comparisons, text-representation exploration and cold-item evaluation. |
+| `12_significance_scaling_synthesis.ipynb` | Perform statistical tests, scaling analysis and results synthesis. |
 
-Two notebooks retain the earlier duplicate-resolution policy for comparison:
-`03_data_preprocessing.ipynb` and `03_validation_against_official_benchmark.ipynb` keep
-the **latest** duplicate review per user–product pair, while the `_earliest` versions keep
-the **earliest** and are the ones used for every result in the dissertation.
+**Preprocessing versions:** Two earlier notebooks, `03_data_preprocessing.ipynb` and `03_validation_against_official_benchmark.ipynb`, are retained for comparison. They use the *latest* review for duplicate user-product pairs. The final pipeline uses the `_earliest` notebooks, and **all results in the dissertation use the earliest-interaction policy**.
 
-## Setup
+## Environment setup
+
+Create a virtual environment:
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate          # Windows
-pip install -r requirements.txt
 ```
 
-PyTorch needs to match your CUDA version; see the note at the top of
-`requirements.txt`.
+Activate it on Windows (Command Prompt):
 
-`requirements.txt` lists the direct dependencies pinned to the versions used for every
-reported result. `requirements_full.txt` is a complete environment snapshot from
-`pip freeze`, for exact reproduction.
+```bat
+.venv\Scripts\activate
+```
 
-## Data
+Or on macOS/Linux:
 
-The raw data is not in the repository. Download the Electronics category of
-[Amazon Reviews 2023](https://amazon-reviews-2023.github.io/) (Hou et al., 2024) and
-place the review and metadata files under `data/raw/`. Notebook 03 produces the processed data used by the later notebooks.
+```bash
+source .venv/bin/activate
+```
 
-The Gowalla files used for the reproductions download automatically in Notebook 09, from
-the LightGCN-PyTorch repository.
+Then install the project dependencies:
 
-## Reproducing the results
+```bash
+python -m pip install -r requirements.txt
+```
 
-Training runs cache their histories and metrics to `results/`, keyed by model,
-protocol, hyperparameters and seed. Re-running a notebook reads from that cache rather
-than retraining, so all notebooks execute in minutes once the data has been preprocessed.
+`requirements.txt` lists the pinned direct dependencies. `requirements_full.txt` records the original environment from `pip freeze`; it is provided as an additional reference, although exact environment replication may depend on the operating system and GPU setup.
 
-Deleting a cache directory forces the corresponding runs to be recomputed. The complete set of experiments takes roughly 70 GPU-hours from scratch. 
+**PyTorch must be installed with a build compatible with the available CUDA environment**; see the note in `requirements.txt`.
 
-## Hardware
+## Data preparation
 
-The experiments were run locally on an NVIDIA GeForce RTX 5070 Ti Laptop GPU with
-12 GB VRAM and 32 GB system memory. Wall-clock training times reported in the project
-are therefore specific to this hardware configuration.
+Raw data is **not included** in the repository. Download the Electronics review interactions and product metadata from the [Amazon Reviews 2023 dataset website](https://amazon-reviews-2023.github.io/) and place the files in `data/raw/` using the filenames expected by the notebooks.
 
-## References
+Run the numbered notebooks in the order shown above. The final preprocessing retains the earliest user-product interaction and reapplies iterative five-core filtering after deduplication. It produces **15,473,536 interactions**, **1,641,026 users** and **368,228 products**. Most main experiments use a smaller, nested primary subset with **2,346,776 interactions**.
 
-### Data and models used
+The final preprocessing and evaluation splits are checked against the official Electronics benchmark files in Notebooks 03 and 04.
 
-- **Amazon Reviews 2023**, Electronics category. Hou et al. (2026),
-  [amazon-reviews-2023.github.io](https://amazon-reviews-2023.github.io/), arXiv:2403.03952.
-  The preprocessing here reproduces the authors' official 5-core benchmark, which is used
-  to validate it in Notebook 03.
-- **Gowalla train/test split**, downloaded in Notebook 09 from
-  [gusye1234/LightGCN-PyTorch](https://github.com/gusye1234/LightGCN-PyTorch). The split
-  originates with NGCF (Wang et al., 2019) and was reused by LightGCN.
-- **BLaIR** (`hyp1231/blair-roberta-base`), released by the dataset authors, pretrained on
-  Amazon Reviews 2023 metadata.
-- **MiniLM** (`sentence-transformers/all-MiniLM-L6-v2`), a general-purpose sentence encoder
-  used as a control.
+**Gowalla:** Notebook 09 retrieves the released Gowalla files from the [LightGCN-PyTorch repository](https://github.com/gusye1234/LightGCN-PyTorch) for the external implementation checks.
 
-### Implementations
+## Reproducing and inspecting the experiments
 
-All models are implemented from the published equations in `src/models.py`; no model
-code is copied. The released LightGCN PyTorch implementation was consulted to match two
-implementation details not specified clearly in the paper: user-uniform negative
-sampling and the factor of one half in the regularisation term. Both are documented and
-tested in Notebook 09.
+Each notebook documents its inputs, checks and outputs. After preparing the dataset and environment, the notebooks can be run sequentially or their saved outputs can be inspected without rerunning the full pipeline.
 
-### Papers
+Experiment histories, summary metrics and per-user scores are cached in `results/` by experimental configuration. **When the corresponding cached files are available**, later runs can reuse them instead of retraining. Missing or deleted caches require the relevant experiments to be executed again; the complete pipeline is computationally expensive.
 
-- He et al. (2020) *LightGCN*. SIGIR. arXiv:2002.02126
-- Wang et al. (2019) *Neural Graph Collaborative Filtering*. SIGIR. arXiv:1905.08108
-- Hamilton et al. (2017) *Inductive Representation Learning on Large Graphs*. NeurIPS
-- Rendle et al. (2009) *BPR: Bayesian Personalized Ranking from Implicit Feedback*. UAI
-- Ji et al. (2023) *A Critical Study on Data Leakage in Recommender System Offline
-  Evaluation*. ACM TOIS. doi:10.1145/3569930
-- Krichene and Rendle (2020) *On Sampled Metrics for Item Recommendation*. KDD
+The experiments were performed locally using an **NVIDIA GeForce RTX 5070 Ti Laptop GPU (12 GB VRAM)** and **32 GB system RAM**. Across the project, training and evaluation required approximately **60 hours of cumulative experiment runtime**, excluding development and code-writing time. This describes the original execution, not a guaranteed runtime on another machine.
+
+The scaling study uses short training probes to measure per-epoch cost. LightGCN was **not trained to completion** on the full dataset subset because of its projected runtime.
+
+## Implementation notes and external resources
+
+The recommendation models were implemented for this project from their published formulations. The released LightGCN implementation was consulted when checking training details, including user-uniform negative sampling and regularisation.
+
+The Gowalla reproduction is an **implementation check**, not a claim that Gowalla results are directly comparable with the main Electronics experiments.
+
+- **Dataset and BLaIR:** [Amazon Reviews 2023](https://amazon-reviews-2023.github.io/); Hou et al. (2026), *Bridging Language and Items for Retrieval and Recommendation: Benchmarking LLMs as Semantic Encoders*.
+- **LightGCN:** He et al. (2020), *LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation*.
+- **NGCF:** Wang et al. (2019), *Neural Graph Collaborative Filtering*.
+- **GraphSAGE:** Hamilton, Ying and Leskovec (2017), *Inductive Representation Learning on Large Graphs*.
+- **BPR:** Rendle et al. (2009), *BPR: Bayesian Personalized Ranking from Implicit Feedback*.
+
+The feature experiments also use `hyp1231/blair-roberta-base` and `sentence-transformers/all-MiniLM-L6-v2`.
+
+The dissertation contains the full bibliography and detailed discussion of the supporting literature.
+
+## Generative AI disclosure
+
+Generative AI was used as a supporting tool for literature exploration, implementation discussion and debugging, and report polishing. Each notebook includes a declaration of generative AI use at the end, while **Chapter 5 and Appendix C of the dissertation** provide the overall disclosure and reflection.
+
+All reported numerical results were produced by the implemented experimental pipeline.
+

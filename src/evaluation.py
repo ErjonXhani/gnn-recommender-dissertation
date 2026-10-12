@@ -5,7 +5,7 @@ not raise an error, but it returns a plausible but wrong metric. So, the design 
 being checkable over being clever, and Notebook 08 validates it against a popularity
 baseline before any real model is run.
 
-Users are sampled but items never are. Krichene and Rendle (KDD 2020) show that
+Users are sampled but items never are. Krichene and Rendle (2020) show that
 sampling items produces metrics inconsistent with their exact versions, to the point of
 reversing the relative order of models.
 """
